@@ -8,6 +8,7 @@
     "basis_threshold_pct": 0.3,
     "min_volume_usd": 1000000,
     "cooldown_minutes": 60,
+    "max_signals_per_tick": 5,
     "symbols": []
   },
   "alerts": {

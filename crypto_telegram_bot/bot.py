@@ -17,6 +17,7 @@ Optional dry-run (prints to console, no Telegram messages):
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import logging
 import os
@@ -95,13 +96,18 @@ def run_tick(cfg: dict, last_alert: dict[str, float], token: str, chat_id: str,
         s for s in signals
         if now - last_alert.get(s.symbol, 0) > cooldown_sec
     ]
+    # Send only the strongest signals each tick — prevents spam when the
+    # whole market dislocates at once (e.g. CPI release, exchange outage).
+    max_per_tick = int(cfg["monitoring"].get("max_signals_per_tick", 5))
+    new_signals.sort(key=lambda s: abs(s.basis_pct), reverse=True)
+    to_send = new_signals[:max_per_tick]
     relevant = sum(1 for m in markets if m.get("market") == TARGET_EXCHANGE
                    and m.get("contract_type") == "perpetual")
     logging.info(
-        "Tick: %d markets total, %d on %s, %d signals, %d to send (others on cooldown)",
-        len(markets), relevant, TARGET_EXCHANGE, len(signals), len(new_signals),
+        "Tick: %d markets total, %d on %s, %d signals, %d new, %d to send this tick",
+        len(markets), relevant, TARGET_EXCHANGE, len(signals), len(new_signals), len(to_send),
     )
-    for s in new_signals:
+    for s in to_send:
         msg = format_message(s, cfg)
         if send_telegram(token, chat_id, msg, dry_run):
             last_alert[s.symbol] = now
@@ -162,9 +168,12 @@ def compute_signals(markets: list[dict], cfg: dict) -> list[Signal]:
 
 
 def format_message(s: Signal, cfg: dict) -> str:
-    direction = "perp > spot (контанго)" if s.basis_pct > 0 else "perp < spot (бэквордація)"
+    # Telegram HTML parse mode treats raw <, > as tag delimiters and rejects
+    # the whole message — escape user-controlled and template special chars.
+    direction = "perp &gt; spot (контанго)" if s.basis_pct > 0 else "perp &lt; spot (бэквордація)"
     emoji = "🔴" if s.is_extreme else "🟢"
-    short_sym = s.symbol.replace("USDT", "")
+    safe_symbol = html.escape(s.symbol)
+    short_sym = html.escape(s.symbol.replace("USDT", ""))
     lines = [
         f"{emoji} <b>{short_sym}</b> basis сигнал",
         "",
@@ -184,8 +193,8 @@ def format_message(s: Signal, cfg: dict) -> str:
         if s.basis_pct > 0:
             lines += [
                 "<b>Дія</b> (delta-neutral basis trade):",
-                f"  • SHORT perp {s.symbol} (плече 1x)",
-                f"  • LONG  spot {s.symbol}",
+                f"  • SHORT perp {safe_symbol} (плече 1x)",
+                f"  • LONG  spot {safe_symbol}",
                 "  • Закрити коли |basis| &lt; 0.1%",
             ]
         else:
