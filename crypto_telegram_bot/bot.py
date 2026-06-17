@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 import time
 from dataclasses import dataclass
@@ -51,7 +52,52 @@ def load_config(path: Path) -> dict[str, Any]:
             f"Config not found: {path}\n"
             f"Copy config.example.json to config.json and fill in your Telegram bot token and chat ID."
         )
-    return json.loads(path.read_text())
+    cfg = json.loads(path.read_text())
+    # Env vars override config secrets — used by GitHub Actions
+    env_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    env_chat = os.getenv("TELEGRAM_CHAT_ID")
+    if env_token:
+        cfg["telegram"]["bot_token"] = env_token
+    if env_chat:
+        cfg["telegram"]["chat_id"] = env_chat
+    return cfg
+
+
+def load_state(path: Path | None) -> dict[str, float]:
+    if not path or not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text())
+        return {k: float(v) for k, v in data.get("last_alert", {}).items()}
+    except (json.JSONDecodeError, OSError, ValueError):
+        return {}
+
+
+def save_state(path: Path | None, last_alert: dict[str, float]) -> None:
+    if not path:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"last_alert": last_alert}))
+
+
+def run_tick(cfg: dict, last_alert: dict[str, float], token: str, chat_id: str,
+             cooldown_sec: int, dry_run: bool) -> None:
+    spot_map, fut_map, prem_map = fetch_market_data()
+    signals = compute_signals(spot_map, fut_map, prem_map, cfg)
+    now = time.time()
+    new_signals = [
+        s for s in signals
+        if now - last_alert.get(s.symbol, 0) > cooldown_sec
+    ]
+    logging.info(
+        "Tick: %d total signals, %d to send (others on cooldown)",
+        len(signals), len(new_signals),
+    )
+    for s in new_signals:
+        msg = format_message(s, cfg)
+        if send_telegram(token, chat_id, msg, dry_run):
+            last_alert[s.symbol] = now
+            logging.info("Sent: %s basis=%+.3f%%", s.symbol, s.basis_pct)
 
 
 def fetch_market_data() -> tuple[dict, dict, dict]:
@@ -168,6 +214,10 @@ def main() -> None:
     parser.add_argument("--config", default="config.json", help="Path to config file")
     parser.add_argument("--dry-run", action="store_true", help="Print to console instead of Telegram")
     parser.add_argument("--test", action="store_true", help="Send one test message and exit")
+    parser.add_argument("--once", action="store_true",
+                        help="Run a single tick then exit (for cron / GitHub Actions)")
+    parser.add_argument("--state-file", default=None,
+                        help="JSON file to persist last_alert times across runs")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -178,6 +228,14 @@ def main() -> None:
     interval = cfg["monitoring"]["poll_interval_seconds"]
     cooldown_sec = cfg["monitoring"]["cooldown_minutes"] * 60
 
+    placeholders = ("PASTE_", "FROM_ENV", "")
+    if any(p == token or token.startswith("PASTE_") for p in placeholders) or \
+       any(p == chat_id or chat_id.startswith("PASTE_") for p in placeholders):
+        sys.exit(
+            "ERROR: Telegram credentials missing. Set bot_token/chat_id in config.json "
+            "or via TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID env vars."
+        )
+
     if args.test:
         ok = send_telegram(
             token, chat_id,
@@ -185,6 +243,28 @@ def main() -> None:
             args.dry_run,
         )
         sys.exit(0 if ok else 1)
+
+    state_path = Path(args.state_file) if args.state_file else None
+    last_alert = load_state(state_path)
+
+    if args.once:
+        logging.info(
+            "Single-tick run. threshold=%.3f%% min_volume=$%.0fM cooldown=%dmin dry_run=%s state=%s",
+            cfg["monitoring"]["basis_threshold_pct"],
+            cfg["monitoring"]["min_volume_usd"] / 1e6,
+            cfg["monitoring"]["cooldown_minutes"],
+            args.dry_run,
+            state_path,
+        )
+        try:
+            run_tick(cfg, last_alert, token, chat_id, cooldown_sec, args.dry_run)
+        except requests.RequestException as e:
+            # Transient Binance issue — log and exit 0 so the workflow stays green
+            logging.warning("Network error (will retry next run): %s", e)
+            save_state(state_path, last_alert)
+            return
+        save_state(state_path, last_alert)
+        return
 
     logging.info(
         "Bot started. threshold=%.3f%% min_volume=$%.0fM interval=%ds cooldown=%dmin dry_run=%s",
@@ -195,26 +275,10 @@ def main() -> None:
         args.dry_run,
     )
 
-    last_alert: dict[str, float] = {}  # symbol -> unix ts of last alert sent
-
     while True:
         try:
-            spot_map, fut_map, prem_map = fetch_market_data()
-            signals = compute_signals(spot_map, fut_map, prem_map, cfg)
-            now = time.time()
-            new_signals = [
-                s for s in signals
-                if now - last_alert.get(s.symbol, 0) > cooldown_sec
-            ]
-            logging.info(
-                "Tick: %d total signals, %d to send (others on cooldown)",
-                len(signals), len(new_signals),
-            )
-            for s in new_signals:
-                msg = format_message(s, cfg)
-                if send_telegram(token, chat_id, msg, args.dry_run):
-                    last_alert[s.symbol] = now
-                    logging.info("Sent: %s basis=%+.3f%%", s.symbol, s.basis_pct)
+            run_tick(cfg, last_alert, token, chat_id, cooldown_sec, args.dry_run)
+            save_state(state_path, last_alert)
         except requests.RequestException as e:
             logging.warning("Network error: %s — retrying in %ds", e, interval)
         except Exception as e:

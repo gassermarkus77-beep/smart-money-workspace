@@ -1,0 +1,55 @@
+name: Crypto Basis Alerts
+
+on:
+  schedule:
+    # Every 15 minutes. Minimum allowed by GitHub is 5 min.
+    # Note: scheduled runs may be delayed during high load.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:  # allow manual trigger from Actions tab
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crypto-alerts
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r crypto_telegram_bot/requirements.txt
+
+      - name: Restore alert state cache
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: crypto_telegram_bot/state.json
+          key: crypto-bot-state-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            crypto-bot-state-
+
+      - name: Run bot (single tick)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        working-directory: crypto_telegram_bot
+        run: python bot.py --once --config config.github.json --state-file state.json
+
+      - name: Save alert state cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: crypto_telegram_bot/state.json
+          key: crypto-bot-state-${{ github.run_id }}-${{ github.run_attempt }}

@@ -1,0 +1,33 @@
+name: Crypto Bot — Test Message
+
+# Manual trigger only. Use this once after setting up secrets
+# to verify the bot can send Telegram messages.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r crypto_telegram_bot/requirements.txt
+
+      - name: Send test message
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        working-directory: crypto_telegram_bot
+        run: python bot.py --test --config config.github.json
