@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crypto Spreads Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .row-hot { background-color: rgba(34, 197, 94, 0.12); }
+    .row-warn { background-color: rgba(234, 179, 8, 0.10); }
+    .row-extreme { background-color: rgba(239, 68, 68, 0.15); }
+    th { position: sticky; top: 0; background-color: #111827; z-index: 10; }
+    .flash { animation: flash 0.6s ease-out; }
+    @keyframes flash {
+      0%   { background-color: rgba(59, 130, 246, 0.4); }
+      100% { background-color: transparent; }
+    }
+    .spinner {
+      display: inline-block;
+      width: 12px; height: 12px;
+      border: 2px solid #9ca3af;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+  <div class="max-w-7xl mx-auto p-4">
+
+    <header class="flex flex-wrap items-baseline justify-between gap-3 mb-4">
+      <div>
+        <h1 class="text-2xl font-bold">Crypto Spreads Dashboard</h1>
+        <p class="text-sm text-gray-400">Perpetual vs Spot basis on Binance · live</p>
+      </div>
+      <div class="flex items-center gap-3 text-sm">
+        <span id="status" class="text-gray-400">
+          <span class="spinner"></span> завантажую…
+        </span>
+        <button id="pauseBtn"
+          class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">Pause</button>
+      </div>
+    </header>
+
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+      <div class="bg-gray-800 rounded p-3">
+        <div class="text-xs text-gray-400 uppercase">Пар відстежується</div>
+        <div id="statCount" class="text-2xl font-semibold">—</div>
+      </div>
+      <div class="bg-gray-800 rounded p-3">
+        <div class="text-xs text-gray-400 uppercase">Сигнали (|basis| ≥ поріг)</div>
+        <div id="statSignals" class="text-2xl font-semibold text-green-400">—</div>
+      </div>
+      <div class="bg-gray-800 rounded p-3">
+        <div class="text-xs text-gray-400 uppercase">Найбільший контанго</div>
+        <div id="statMaxPos" class="text-2xl font-semibold text-green-400">—</div>
+      </div>
+      <div class="bg-gray-800 rounded p-3">
+        <div class="text-xs text-gray-400 uppercase">Найбільша бэквордація</div>
+        <div id="statMaxNeg" class="text-2xl font-semibold text-red-400">—</div>
+      </div>
+    </section>
+
+    <section class="bg-gray-800 rounded p-3 mb-4 flex flex-wrap gap-4 items-end">
+      <div>
+        <label class="block text-xs text-gray-400 uppercase mb-1">Пошук</label>
+        <input id="searchInput" type="text" placeholder="BTC, ETH, SOL…"
+          class="bg-gray-900 border border-gray-700 rounded px-2 py-1 w-40 text-sm" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 uppercase mb-1">Поріг basis (%)</label>
+        <input id="thresholdInput" type="number" step="0.05" value="0.3"
+          class="bg-gray-900 border border-gray-700 rounded px-2 py-1 w-24 text-sm" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 uppercase mb-1">Мін. обсяг (24h, USD)</label>
+        <input id="volumeInput" type="number" step="100000" value="1000000"
+          class="bg-gray-900 border border-gray-700 rounded px-2 py-1 w-32 text-sm" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 uppercase mb-1">Сортування</label>
+        <select id="sortSelect" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-sm">
+          <option value="abs_basis_desc">|Basis| ↓</option>
+          <option value="basis_desc">Basis ↓ (контанго)</option>
+          <option value="basis_asc">Basis ↑ (бэквордація)</option>
+          <option value="funding_desc">Funding ↓</option>
+          <option value="volume_desc">Обсяг ↓</option>
+          <option value="symbol_asc">Символ A→Z</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 uppercase mb-1">Інтервал (сек)</label>
+        <select id="intervalSelect" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-sm">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="30">30</option>
+          <option value="60">60</option>
+        </select>
+      </div>
+      <div class="flex items-center gap-2">
+        <input id="soundToggle" type="checkbox"
+          class="w-4 h-4 accent-blue-500" />
+        <label class="text-xs text-gray-400 uppercase">Звуковий сигнал</label>
+      </div>
+    </section>
+
+    <section class="bg-gray-800 rounded overflow-hidden">
+      <div class="max-h-[70vh] overflow-y-auto">
+        <table class="w-full text-sm">
+          <thead class="text-xs uppercase text-gray-400">
+            <tr>
+              <th class="text-left px-3 py-2">Символ</th>
+              <th class="text-right px-3 py-2">Спот</th>
+              <th class="text-right px-3 py-2">Perp</th>
+              <th class="text-right px-3 py-2">Basis %</th>
+              <th class="text-right px-3 py-2">Funding %</th>
+              <th class="text-right px-3 py-2">Funding річн.</th>
+              <th class="text-right px-3 py-2">Обсяг 24h</th>
+              <th class="text-right px-3 py-2">Зміна 24h</th>
+              <th class="text-right px-3 py-2">Сигнал</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-gray-700">
+            <tr><td colspan="9" class="text-center py-6 text-gray-500">Завантаження даних з Binance…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="text-xs text-gray-500 mt-4 leading-relaxed">
+      <p>
+        Дані: Binance public API (без авторизації, прямі дзвінки з браузера).
+        Basis = (Perp / Spot − 1) × 100. Funding річн. ≈ funding × 3 × 365.
+        Сигнал з'являється коли |basis| ≥ поріг та обсяг ≥ мінімального.
+      </p>
+      <p class="mt-1">
+        Зелений рядок = сигнал у нормі. Жовтий = підвищена увага.
+        Червоний = екстремум (|basis| ≥ 2× поріг). Не торгуй автоматично, перевіряй funding, ліквідність і новини.
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    const BINANCE_SPOT_URL   = "https://api.binance.com/api/v3/ticker/24hr";
+    const BINANCE_FUT_URL    = "https://fapi.binance.com/fapi/v1/ticker/24hr";
+    const BINANCE_PREMIUM_URL = "https://fapi.binance.com/fapi/v1/premiumIndex";
+
+    const state = {
+      paused: false,
+      data: [],
+      previousBasis: {},
+      lastUpdate: null,
+      alertedSymbols: new Set(),
+    };
+
+    const els = {
+      tableBody: document.getElementById("tableBody"),
+      status: document.getElementById("status"),
+      pauseBtn: document.getElementById("pauseBtn"),
+      statCount: document.getElementById("statCount"),
+      statSignals: document.getElementById("statSignals"),
+      statMaxPos: document.getElementById("statMaxPos"),
+      statMaxNeg: document.getElementById("statMaxNeg"),
+      search: document.getElementById("searchInput"),
+      threshold: document.getElementById("thresholdInput"),
+      volume: document.getElementById("volumeInput"),
+      sort: document.getElementById("sortSelect"),
+      interval: document.getElementById("intervalSelect"),
+      sound: document.getElementById("soundToggle"),
+    };
+
+    // Persist settings
+    const SETTINGS_KEYS = ["search", "threshold", "volume", "sort", "interval", "sound"];
+    function loadSettings() {
+      const saved = JSON.parse(localStorage.getItem("cryptoDashSettings") || "{}");
+      for (const k of SETTINGS_KEYS) {
+        if (saved[k] === undefined) continue;
+        const el = els[k];
+        if (el.type === "checkbox") el.checked = saved[k];
+        else el.value = saved[k];
+      }
+    }
+    function saveSettings() {
+      const s = {};
+      for (const k of SETTINGS_KEYS) {
+        const el = els[k];
+        s[k] = el.type === "checkbox" ? el.checked : el.value;
+      }
+      localStorage.setItem("cryptoDashSettings", JSON.stringify(s));
+    }
+    SETTINGS_KEYS.forEach(k => els[k].addEventListener("change", () => { saveSettings(); render(); }));
+    els.search.addEventListener("input", render);
+    els.interval.addEventListener("change", restartTimer);
+    loadSettings();
+
+    els.pauseBtn.addEventListener("click", () => {
+      state.paused = !state.paused;
+      els.pauseBtn.textContent = state.paused ? "Resume" : "Pause";
+      els.pauseBtn.classList.toggle("bg-green-600", state.paused);
+      els.pauseBtn.classList.toggle("hover:bg-green-500", state.paused);
+    });
+
+    async function fetchAll() {
+      if (state.paused) return;
+      els.status.innerHTML = '<span class="spinner"></span> оновлюю…';
+      try {
+        const [spotResp, futResp, premResp] = await Promise.all([
+          fetch(BINANCE_SPOT_URL),
+          fetch(BINANCE_FUT_URL),
+          fetch(BINANCE_PREMIUM_URL),
+        ]);
+        if (!spotResp.ok || !futResp.ok || !premResp.ok) throw new Error("HTTP error");
+        const [spot, fut, prem] = await Promise.all([
+          spotResp.json(), futResp.json(), premResp.json()
+        ]);
+
+        const spotBySymbol = {};
+        for (const s of spot) {
+          if (s.symbol.endsWith("USDT")) spotBySymbol[s.symbol] = s;
+        }
+        const premBySymbol = {};
+        for (const p of prem) premBySymbol[p.symbol] = p;
+
+        const merged = [];
+        for (const f of fut) {
+          if (!f.symbol.endsWith("USDT")) continue;
+          const sp = spotBySymbol[f.symbol];
+          if (!sp) continue;
+          const spotPrice = parseFloat(sp.lastPrice);
+          const perpPrice = parseFloat(f.lastPrice);
+          if (!spotPrice || !perpPrice) continue;
+          const basis = (perpPrice / spotPrice - 1) * 100;
+          const fundingRate = premBySymbol[f.symbol]
+            ? parseFloat(premBySymbol[f.symbol].lastFundingRate) * 100
+            : 0;
+          merged.push({
+            symbol: f.symbol.replace("USDT", ""),
+            fullSymbol: f.symbol,
+            spotPrice,
+            perpPrice,
+            basis,
+            funding: fundingRate,
+            fundingAnnualized: fundingRate * 3 * 365,
+            volume: parseFloat(f.quoteVolume),
+            priceChange: parseFloat(f.priceChangePercent),
+          });
+        }
+
+        state.data = merged;
+        state.lastUpdate = new Date();
+        const t = state.lastUpdate.toLocaleTimeString("uk-UA");
+        els.status.textContent = `оновлено ${t}`;
+        render();
+      } catch (err) {
+        els.status.innerHTML = `<span class="text-red-400">помилка: ${err.message}</span>`;
+      }
+    }
+
+    function fmt(n, digits = 2) {
+      if (n === null || n === undefined || Number.isNaN(n)) return "—";
+      return n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    }
+    function fmtPrice(n) {
+      if (n >= 1000) return fmt(n, 1);
+      if (n >= 1) return fmt(n, 4);
+      return fmt(n, 6);
+    }
+    function fmtVolume(n) {
+      if (n >= 1e9) return (n / 1e9).toFixed(2) + "B";
+      if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
+      if (n >= 1e3) return (n / 1e3).toFixed(0) + "K";
+      return n.toFixed(0);
+    }
+
+    function render() {
+      const search = els.search.value.trim().toUpperCase();
+      const threshold = parseFloat(els.threshold.value) || 0.3;
+      const minVol = parseFloat(els.volume.value) || 0;
+      const sort = els.sort.value;
+
+      let rows = state.data.filter(d =>
+        d.volume >= minVol && (search === "" || d.symbol.includes(search))
+      );
+
+      const sorters = {
+        abs_basis_desc: (a, b) => Math.abs(b.basis) - Math.abs(a.basis),
+        basis_desc:     (a, b) => b.basis - a.basis,
+        basis_asc:      (a, b) => a.basis - b.basis,
+        funding_desc:   (a, b) => Math.abs(b.funding) - Math.abs(a.funding),
+        volume_desc:    (a, b) => b.volume - a.volume,
+        symbol_asc:     (a, b) => a.symbol.localeCompare(b.symbol),
+      };
+      rows.sort(sorters[sort] || sorters.abs_basis_desc);
+
+      // Stats
+      els.statCount.textContent = rows.length;
+      const signals = rows.filter(r => Math.abs(r.basis) >= threshold);
+      els.statSignals.textContent = signals.length;
+      if (rows.length) {
+        const maxPos = rows.reduce((a, b) => b.basis > a.basis ? b : a);
+        const maxNeg = rows.reduce((a, b) => b.basis < a.basis ? b : a);
+        els.statMaxPos.textContent = `${maxPos.symbol} ${fmt(maxPos.basis, 3)}%`;
+        els.statMaxNeg.textContent = `${maxNeg.symbol} ${fmt(maxNeg.basis, 3)}%`;
+      }
+
+      // Sound alert when a NEW symbol crosses threshold
+      const currentAlerted = new Set(signals.map(s => s.fullSymbol));
+      const newAlerts = [...currentAlerted].filter(s => !state.alertedSymbols.has(s));
+      if (newAlerts.length && els.sound.checked) playBeep();
+      state.alertedSymbols = currentAlerted;
+
+      // Render rows
+      if (!rows.length) {
+        els.tableBody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-gray-500">Немає пар, що відповідають фільтрам.</td></tr>`;
+        return;
+      }
+
+      const html = rows.slice(0, 200).map(r => {
+        const absBasis = Math.abs(r.basis);
+        let rowClass = "";
+        if (absBasis >= threshold * 2) rowClass = "row-extreme";
+        else if (absBasis >= threshold) rowClass = "row-hot";
+        else if (absBasis >= threshold * 0.6) rowClass = "row-warn";
+
+        const signalText = absBasis >= threshold ? "🟢 СИГНАЛ" : "—";
+        const basisColor = r.basis > 0 ? "text-green-400" : "text-red-400";
+        const fundingColor = r.funding > 0 ? "text-green-400" : "text-red-400";
+
+        const prev = state.previousBasis[r.fullSymbol];
+        const flashClass = (prev !== undefined && Math.abs(prev - r.basis) > 0.05) ? "flash" : "";
+
+        return `
+          <tr class="${rowClass} ${flashClass} hover:bg-gray-700/40">
+            <td class="px-3 py-2 font-semibold">${r.symbol}</td>
+            <td class="px-3 py-2 text-right tabular-nums">${fmtPrice(r.spotPrice)}</td>
+            <td class="px-3 py-2 text-right tabular-nums">${fmtPrice(r.perpPrice)}</td>
+            <td class="px-3 py-2 text-right tabular-nums font-semibold ${basisColor}">${fmt(r.basis, 3)}%</td>
+            <td class="px-3 py-2 text-right tabular-nums ${fundingColor}">${fmt(r.funding, 4)}%</td>
+            <td class="px-3 py-2 text-right tabular-nums ${fundingColor}">${fmt(r.fundingAnnualized, 1)}%</td>
+            <td class="px-3 py-2 text-right tabular-nums text-gray-400">$${fmtVolume(r.volume)}</td>
+            <td class="px-3 py-2 text-right tabular-nums ${r.priceChange >= 0 ? 'text-green-400' : 'text-red-400'}">${fmt(r.priceChange, 2)}%</td>
+            <td class="px-3 py-2 text-right">${signalText}</td>
+          </tr>
+        `;
+      }).join("");
+
+      els.tableBody.innerHTML = html;
+
+      // Save current basis for flash comparison
+      state.previousBasis = Object.fromEntries(rows.map(r => [r.fullSymbol, r.basis]));
+    }
+
+    let timer = null;
+    function restartTimer() {
+      if (timer) clearInterval(timer);
+      const sec = parseInt(els.interval.value, 10) || 10;
+      timer = setInterval(fetchAll, sec * 1000);
+    }
+
+    let audioCtx = null;
+    function playBeep() {
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } catch (e) { /* ignore */ }
+    }
+
+    fetchAll();
+    restartTimer();
+  </script>
+</body>
+</html>
