@@ -5,14 +5,14 @@
   },
   "monitoring": {
     "poll_interval_seconds": 30,
-    "basis_threshold_pct": 0.3,
-    "min_volume_usd": 1000000,
-    "cooldown_minutes": 60,
-    "max_signals_per_tick": 5,
+    "basis_threshold_pct": 0.5,
+    "min_volume_usd": 50000000,
+    "cooldown_minutes": 120,
+    "max_signals_per_tick": 3,
     "symbols": []
   },
   "alerts": {
-    "extreme_threshold_pct": 0.8,
+    "extreme_threshold_pct": 1.0,
     "include_funding": true,
     "include_action_hint": true
   }
