@@ -28,13 +28,15 @@ from typing import Any
 
 import requests
 
-# Bybit API: works from cloud datacenters (GitHub Actions, AWS, Azure).
-# Binance geo-blocks many cloud regions, so we use Bybit by default.
-# Both provide the same basis trading data; Bybit even includes funding
-# rate in the linear (perpetual) tickers response, saving a request.
-SPOT_URL = "https://api.bybit.com/v5/market/tickers?category=spot"
-LINEAR_URL = "https://api.bybit.com/v5/market/tickers?category=linear"
-EXCHANGE_NAME = "Bybit"
+# CoinGecko aggregator API. Direct exchange endpoints (Binance, Bybit,
+# OKX) geo-block GitHub Actions runners, but CoinGecko is a global
+# aggregator that works from any IP. It also pre-computes basis and
+# funding_rate for every perpetual, so we drop both the spot fetch and
+# the manual basis calculation.
+COINGECKO_URL = "https://api.coingecko.com/api/v3/derivatives"
+# Which exchange's tickers to surface — CoinGecko returns data from
+# many exchanges; we pick one for consistency. Override via env var.
+TARGET_EXCHANGE = os.getenv("TARGET_EXCHANGE", "Binance (Futures)")
 TG_API = "https://api.telegram.org/bot{token}/sendMessage"
 
 
@@ -86,16 +88,18 @@ def save_state(path: Path | None, last_alert: dict[str, float]) -> None:
 
 def run_tick(cfg: dict, last_alert: dict[str, float], token: str, chat_id: str,
              cooldown_sec: int, dry_run: bool) -> None:
-    spot_map, fut_map = fetch_market_data()
-    signals = compute_signals(spot_map, fut_map, cfg)
+    markets = fetch_market_data()
+    signals = compute_signals(markets, cfg)
     now = time.time()
     new_signals = [
         s for s in signals
         if now - last_alert.get(s.symbol, 0) > cooldown_sec
     ]
+    relevant = sum(1 for m in markets if m.get("market") == TARGET_EXCHANGE
+                   and m.get("contract_type") == "perpetual")
     logging.info(
-        "Tick: %d pairs scanned, %d signals, %d to send (others on cooldown)",
-        len(fut_map), len(signals), len(new_signals),
+        "Tick: %d markets total, %d on %s, %d signals, %d to send (others on cooldown)",
+        len(markets), relevant, TARGET_EXCHANGE, len(signals), len(new_signals),
     )
     for s in new_signals:
         msg = format_message(s, cfg)
@@ -104,56 +108,51 @@ def run_tick(cfg: dict, last_alert: dict[str, float], token: str, chat_id: str,
             logging.info("Sent: %s basis=%+.3f%%", s.symbol, s.basis_pct)
 
 
-def _bybit_get(url: str) -> list[dict]:
-    resp = requests.get(url, timeout=15)
+def fetch_market_data() -> list[dict]:
+    resp = requests.get(COINGECKO_URL, timeout=20)
     resp.raise_for_status()
     data = resp.json()
-    if not isinstance(data, dict) or data.get("retCode") != 0:
-        msg = data.get("retMsg") if isinstance(data, dict) else str(data)[:200]
-        raise RuntimeError(f"Bybit API error: {msg}")
-    return data["result"]["list"]
+    if not isinstance(data, list):
+        raise RuntimeError(f"CoinGecko returned non-list response: {str(data)[:200]}")
+    return data
 
 
-def fetch_market_data() -> tuple[dict, dict]:
-    spot_list = _bybit_get(SPOT_URL)
-    linear_list = _bybit_get(LINEAR_URL)
-    spot_map = {s["symbol"]: s for s in spot_list if s["symbol"].endswith("USDT")}
-    fut_map = {f["symbol"]: f for f in linear_list if f["symbol"].endswith("USDT")}
-    return spot_map, fut_map
-
-
-def compute_signals(spot_map: dict, fut_map: dict, cfg: dict) -> list[Signal]:
+def compute_signals(markets: list[dict], cfg: dict) -> list[Signal]:
     threshold = cfg["monitoring"]["basis_threshold_pct"]
     extreme = cfg["alerts"]["extreme_threshold_pct"]
     min_volume = cfg["monitoring"]["min_volume_usd"]
     symbols_filter = set(cfg["monitoring"].get("symbols", []))
 
     out: list[Signal] = []
-    for symbol, f in fut_map.items():
-        if symbols_filter and symbol not in symbols_filter:
+    for m in markets:
+        if m.get("market") != TARGET_EXCHANGE:
             continue
-        sp = spot_map.get(symbol)
-        if not sp:
+        if m.get("contract_type") != "perpetual":
+            continue
+        symbol = m.get("symbol", "")
+        # CoinGecko uses "BTCUSDT" or "BTCUSDT_PERP" depending on exchange — normalize
+        normalized = symbol.replace("_PERP", "").replace("-PERP", "")
+        if symbols_filter and normalized not in symbols_filter:
             continue
         try:
-            spot_price = float(sp["lastPrice"])
-            perp_price = float(f["lastPrice"])
-            volume = float(f["turnover24h"])  # Bybit: 24h turnover in quote currency (USDT)
-            funding = float(f.get("fundingRate", 0)) * 100
-        except (KeyError, ValueError):
+            basis = float(m.get("basis", 0) or 0)
+            funding = float(m.get("funding_rate", 0) or 0)
+            perp_price = float(m.get("price", 0) or 0)
+            index_price = float(m.get("index", 0) or 0)
+            volume = float(m.get("volume_24h", 0) or 0)
+        except (TypeError, ValueError):
             continue
-        if not spot_price or not perp_price or volume < min_volume:
+        if not perp_price or not index_price or volume < min_volume:
             continue
-        basis = (perp_price / spot_price - 1) * 100
         if abs(basis) < threshold:
             continue
         out.append(
             Signal(
-                symbol=symbol,
+                symbol=normalized,
                 basis_pct=basis,
                 funding_pct=funding,
                 funding_annualized_pct=funding * 3 * 365,
-                spot_price=spot_price,
+                spot_price=index_price,
                 perp_price=perp_price,
                 volume_usd=volume,
                 is_extreme=abs(basis) >= extreme,
