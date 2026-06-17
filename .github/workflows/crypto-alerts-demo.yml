@@ -1,0 +1,33 @@
+name: Crypto Bot — Demo Signals
+
+# Manual trigger. Sends 3 example signal messages so you can preview
+# the alert format without waiting for a real market event.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r crypto_telegram_bot/requirements.txt
+
+      - name: Send demo signals
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        working-directory: crypto_telegram_bot
+        run: python bot.py --demo --config config.github.json

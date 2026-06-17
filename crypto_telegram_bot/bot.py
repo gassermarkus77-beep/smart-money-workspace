@@ -224,6 +224,8 @@ def main() -> None:
     parser.add_argument("--config", default="config.json", help="Path to config file")
     parser.add_argument("--dry-run", action="store_true", help="Print to console instead of Telegram")
     parser.add_argument("--test", action="store_true", help="Send one test message and exit")
+    parser.add_argument("--demo", action="store_true",
+                        help="Send 3 example signal messages so you can preview the format")
     parser.add_argument("--once", action="store_true",
                         help="Run a single tick then exit (for cron / GitHub Actions)")
     parser.add_argument("--state-file", default=None,
@@ -253,6 +255,37 @@ def main() -> None:
             args.dry_run,
         )
         sys.exit(0 if ok else 1)
+
+    if args.demo:
+        intro = (
+            "🎭 <b>DEMO — приклади сигналів</b>\n"
+            "Це фейкові дані щоб ти побачив як виглядають справжні сповіщення.\n"
+            "Реальні сигнали прилетять самі, коли ринок дасть привід."
+        )
+        send_telegram(token, chat_id, intro, args.dry_run)
+        examples = [
+            Signal(  # 1) Звичайний сигнал контанго на BTC
+                symbol="BTCUSDT", basis_pct=0.456, funding_pct=0.0125,
+                funding_annualized_pct=0.0125 * 3 * 365,
+                spot_price=100234.50, perp_price=100691.74,
+                volume_usd=1_240_000_000, is_extreme=False,
+            ),
+            Signal(  # 2) Екстремум на середній альті
+                symbol="SOLUSDT", basis_pct=1.234, funding_pct=0.0840,
+                funding_annualized_pct=0.0840 * 3 * 365,
+                spot_price=189.42, perp_price=191.76,
+                volume_usd=420_000_000, is_extreme=True,
+            ),
+            Signal(  # 3) Бэквордація (рідко)
+                symbol="ETHUSDT", basis_pct=-0.380, funding_pct=-0.0150,
+                funding_annualized_pct=-0.0150 * 3 * 365,
+                spot_price=3621.85, perp_price=3608.09,
+                volume_usd=890_000_000, is_extreme=False,
+            ),
+        ]
+        for s in examples:
+            send_telegram(token, chat_id, format_message(s, cfg), args.dry_run)
+        sys.exit(0)
 
     state_path = Path(args.state_file) if args.state_file else None
     last_alert = load_state(state_path)
