@@ -28,9 +28,13 @@ from typing import Any
 
 import requests
 
-SPOT_URL = "https://api.binance.com/api/v3/ticker/24hr"
-FUT_URL = "https://fapi.binance.com/fapi/v1/ticker/24hr"
-PREMIUM_URL = "https://fapi.binance.com/fapi/v1/premiumIndex"
+# Bybit API: works from cloud datacenters (GitHub Actions, AWS, Azure).
+# Binance geo-blocks many cloud regions, so we use Bybit by default.
+# Both provide the same basis trading data; Bybit even includes funding
+# rate in the linear (perpetual) tickers response, saving a request.
+SPOT_URL = "https://api.bybit.com/v5/market/tickers?category=spot"
+LINEAR_URL = "https://api.bybit.com/v5/market/tickers?category=linear"
+EXCHANGE_NAME = "Bybit"
 TG_API = "https://api.telegram.org/bot{token}/sendMessage"
 
 
@@ -82,16 +86,16 @@ def save_state(path: Path | None, last_alert: dict[str, float]) -> None:
 
 def run_tick(cfg: dict, last_alert: dict[str, float], token: str, chat_id: str,
              cooldown_sec: int, dry_run: bool) -> None:
-    spot_map, fut_map, prem_map = fetch_market_data()
-    signals = compute_signals(spot_map, fut_map, prem_map, cfg)
+    spot_map, fut_map = fetch_market_data()
+    signals = compute_signals(spot_map, fut_map, cfg)
     now = time.time()
     new_signals = [
         s for s in signals
         if now - last_alert.get(s.symbol, 0) > cooldown_sec
     ]
     logging.info(
-        "Tick: %d total signals, %d to send (others on cooldown)",
-        len(signals), len(new_signals),
+        "Tick: %d pairs scanned, %d signals, %d to send (others on cooldown)",
+        len(fut_map), len(signals), len(new_signals),
     )
     for s in new_signals:
         msg = format_message(s, cfg)
@@ -100,19 +104,25 @@ def run_tick(cfg: dict, last_alert: dict[str, float], token: str, chat_id: str,
             logging.info("Sent: %s basis=%+.3f%%", s.symbol, s.basis_pct)
 
 
-def fetch_market_data() -> tuple[dict, dict, dict]:
-    spot = requests.get(SPOT_URL, timeout=15).json()
-    fut = requests.get(FUT_URL, timeout=15).json()
-    prem = requests.get(PREMIUM_URL, timeout=15).json()
-    spot_map = {s["symbol"]: s for s in spot if s["symbol"].endswith("USDT")}
-    fut_map = {f["symbol"]: f for f in fut if f["symbol"].endswith("USDT")}
-    prem_map = {p["symbol"]: p for p in prem}
-    return spot_map, fut_map, prem_map
+def _bybit_get(url: str) -> list[dict]:
+    resp = requests.get(url, timeout=15)
+    resp.raise_for_status()
+    data = resp.json()
+    if not isinstance(data, dict) or data.get("retCode") != 0:
+        msg = data.get("retMsg") if isinstance(data, dict) else str(data)[:200]
+        raise RuntimeError(f"Bybit API error: {msg}")
+    return data["result"]["list"]
 
 
-def compute_signals(
-    spot_map: dict, fut_map: dict, prem_map: dict, cfg: dict
-) -> list[Signal]:
+def fetch_market_data() -> tuple[dict, dict]:
+    spot_list = _bybit_get(SPOT_URL)
+    linear_list = _bybit_get(LINEAR_URL)
+    spot_map = {s["symbol"]: s for s in spot_list if s["symbol"].endswith("USDT")}
+    fut_map = {f["symbol"]: f for f in linear_list if f["symbol"].endswith("USDT")}
+    return spot_map, fut_map
+
+
+def compute_signals(spot_map: dict, fut_map: dict, cfg: dict) -> list[Signal]:
     threshold = cfg["monitoring"]["basis_threshold_pct"]
     extreme = cfg["alerts"]["extreme_threshold_pct"]
     min_volume = cfg["monitoring"]["min_volume_usd"]
@@ -128,13 +138,13 @@ def compute_signals(
         try:
             spot_price = float(sp["lastPrice"])
             perp_price = float(f["lastPrice"])
-            volume = float(f["quoteVolume"])
+            volume = float(f["turnover24h"])  # Bybit: 24h turnover in quote currency (USDT)
+            funding = float(f.get("fundingRate", 0)) * 100
         except (KeyError, ValueError):
             continue
         if not spot_price or not perp_price or volume < min_volume:
             continue
         basis = (perp_price / spot_price - 1) * 100
-        funding = float(prem_map[symbol]["lastFundingRate"]) * 100 if symbol in prem_map else 0.0
         if abs(basis) < threshold:
             continue
         out.append(
