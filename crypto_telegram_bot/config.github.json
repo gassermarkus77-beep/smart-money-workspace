@@ -1,0 +1,18 @@
+{
+  "telegram": {
+    "bot_token": "FROM_ENV",
+    "chat_id": "FROM_ENV"
+  },
+  "monitoring": {
+    "poll_interval_seconds": 30,
+    "basis_threshold_pct": 0.3,
+    "min_volume_usd": 1000000,
+    "cooldown_minutes": 60,
+    "symbols": []
+  },
+  "alerts": {
+    "extreme_threshold_pct": 0.8,
+    "include_funding": true,
+    "include_action_hint": true
+  }
+}
