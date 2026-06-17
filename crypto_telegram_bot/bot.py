@@ -141,7 +141,6 @@ def compute_signals(markets: list[dict], cfg: dict) -> list[Signal]:
         if symbols_filter and normalized not in symbols_filter:
             continue
         try:
-            basis = float(m.get("basis", 0) or 0)
             funding = float(m.get("funding_rate", 0) or 0)
             perp_price = float(m.get("price", 0) or 0)
             index_price = float(m.get("index", 0) or 0)
@@ -150,6 +149,11 @@ def compute_signals(markets: list[dict], cfg: dict) -> list[Signal]:
             continue
         if not perp_price or not index_price or volume < min_volume:
             continue
+        # Compute basis ourselves — CoinGecko's `basis` field uses a sign
+        # convention opposite to ours and is sometimes out of sync with
+        # the displayed prices. Standard convention: positive = perp > spot
+        # = contango.
+        basis = (perp_price / index_price - 1) * 100
         if abs(basis) < threshold:
             continue
         out.append(
