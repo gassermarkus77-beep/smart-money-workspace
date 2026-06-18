@@ -6,6 +6,7 @@
   "monitoring": {
     "poll_interval_seconds": 30,
     "basis_threshold_pct": 0.5,
+    "sanity_cap_basis_pct": 3.0,
     "min_volume_usd": 50000000,
     "cooldown_minutes": 120,
     "max_signals_per_tick": 3,

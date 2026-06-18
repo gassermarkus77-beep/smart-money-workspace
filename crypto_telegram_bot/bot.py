@@ -127,6 +127,12 @@ def compute_signals(markets: list[dict], cfg: dict) -> list[Signal]:
     threshold = cfg["monitoring"]["basis_threshold_pct"]
     extreme = cfg["alerts"]["extreme_threshold_pct"]
     min_volume = cfg["monitoring"]["min_volume_usd"]
+    # Real cross-exchange basis rarely exceeds ~2% — anything wildly
+    # bigger almost always means the aggregator's index isn't tracking
+    # the same instrument as the perp (different listing, stale spot,
+    # token impersonation). Filter those out so we don't surface them
+    # as "opportunities".
+    sanity_cap = float(cfg["monitoring"].get("sanity_cap_basis_pct", 3.0))
     symbols_filter = set(cfg["monitoring"].get("symbols", []))
 
     out: list[Signal] = []
@@ -154,7 +160,7 @@ def compute_signals(markets: list[dict], cfg: dict) -> list[Signal]:
         # the displayed prices. Standard convention: positive = perp > spot
         # = contango.
         basis = (perp_price / index_price - 1) * 100
-        if abs(basis) < threshold:
+        if abs(basis) < threshold or abs(basis) > sanity_cap:
             continue
         out.append(
             Signal(
