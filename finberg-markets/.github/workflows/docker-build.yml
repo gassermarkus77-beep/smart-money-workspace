@@ -1,0 +1,62 @@
+name: Docker Build & Push
+
+on:
+  push:
+    branches: [main]
+    paths: ['finberg-markets/services/**', 'finberg-markets/packages/**', 'finberg-markets/apps/**']
+  workflow_dispatch:
+    inputs:
+      service:
+        description: Service to build (api-gateway, market-data, ai-engine, alerts, web, admin)
+        required: true
+        type: string
+
+permissions:
+  id-token: write          # OIDC to AWS for ECR push
+  contents: read
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.detect.outputs.services }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
+      - id: detect
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "services=[\"${{ inputs.service }}\"]" >> $GITHUB_OUTPUT
+          else
+            # detect changed services + apps
+            changed=$(git diff --name-only HEAD^ HEAD | grep -oE 'finberg-markets/(services|apps)/[^/]+' | sort -u | awk -F/ '{print $3}' | jq -R . | jq -sc .)
+            echo "services=${changed:-[]}" >> $GITHUB_OUTPUT
+
+  build:
+    needs: matrix
+    if: needs.matrix.outputs.services != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJSON(needs.matrix.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/github-actions-ecr-push
+          aws-region: eu-central-1
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: login
+      - uses: docker/setup-buildx-action@v3
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: finberg-markets
+          file: finberg-markets/services/${{ matrix.service }}/Dockerfile
+          push: true
+          provenance: false
+          tags: |
+            ${{ steps.login.outputs.registry }}/finberg/${{ matrix.service }}:${{ github.sha }}
+            ${{ steps.login.outputs.registry }}/finberg/${{ matrix.service }}:latest
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to:   type=gha,mode=max,scope=${{ matrix.service }}

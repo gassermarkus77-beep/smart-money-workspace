@@ -1,0 +1,32 @@
+{
+  "name": "@finberg/market-data",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@finberg/shared": "workspace:*",
+    "fastify": "^5.0.0",
+    "@fastify/websocket": "^11.0.1",
+    "ws": "^8.18.0",
+    "ioredis": "^5.4.1",
+    "kafkajs": "^2.2.4",
+    "zod": "^3.23.8",
+    "pino": "^9.4.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.5",
+    "@types/ws": "^8.5.12",
+    "typescript": "^5.5.4",
+    "tsx": "^4.19.1",
+    "vitest": "^2.1.1"
+  }
+}
