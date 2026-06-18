@@ -8,6 +8,10 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: '/api/proxy/smc/:path*',
+        destination: `${process.env.NEXT_PUBLIC_SMC_URL ?? 'http://localhost:4050'}/v1/smc/:path*`,
+      },
+      {
         source: '/api/proxy/:path*',
         destination: `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}/v1/:path*`,
       },

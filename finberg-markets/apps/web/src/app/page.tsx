@@ -11,6 +11,7 @@ export default function HomePage(): JSX.Element {
           </div>
           <div className="flex items-center gap-6 text-sm text-text-muted">
             <Link href="/chart" className="hover:text-text">Charts</Link>
+            <Link href="/smc" className="hover:text-text">SMC AI</Link>
             <Link href="/scanner" className="hover:text-text">Scanner</Link>
             <Link href="/social" className="hover:text-text">Community</Link>
             <Link href="/login" className="hover:text-text">Sign in</Link>
