@@ -109,6 +109,87 @@ export class Renderer {
     }
   }
 
+  /** OHLC bars (classic American bars: open tick on left, close tick on right). */
+  drawBars(bars: Bar[], min: number, max: number): void {
+    const { ctx, theme } = this;
+    const slotW = this.plotW / bars.length;
+    const tickW = Math.max(2, slotW * 0.35);
+
+    for (let i = 0; i < bars.length; i++) {
+      const b = bars[i]!;
+      const x  = i * slotW + slotW / 2;
+      const yO = this.priceToY(b.o, min, max);
+      const yC = this.priceToY(b.c, min, max);
+      const yH = this.priceToY(b.h, min, max);
+      const yL = this.priceToY(b.l, min, max);
+      const bull = b.c >= b.o;
+
+      ctx.strokeStyle = bull ? theme.bullCandle : theme.bearCandle;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x, yH);   ctx.lineTo(x, yL);
+      ctx.moveTo(x - tickW, yO); ctx.lineTo(x, yO);
+      ctx.moveTo(x, yC); ctx.lineTo(x + tickW, yC);
+      ctx.stroke();
+    }
+  }
+
+  /** Line chart connecting close prices. */
+  drawLineChart(bars: Bar[], min: number, max: number): void {
+    const { ctx, theme } = this;
+    const slotW = this.plotW / bars.length;
+    ctx.strokeStyle = theme.bullCandle;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i < bars.length; i++) {
+      const x = i * slotW + slotW / 2;
+      const y = this.priceToY(bars[i]!.c, min, max);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  /** Area chart: filled gradient below the close-price line. */
+  drawAreaChart(bars: Bar[], min: number, max: number): void {
+    const { ctx, theme } = this;
+    const slotW = this.plotW / bars.length;
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, this.plotH);
+    gradient.addColorStop(0, this.withAlpha(theme.bullCandle, 0.35));
+    gradient.addColorStop(1, this.withAlpha(theme.bullCandle, 0));
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.moveTo(0, this.plotH);
+    for (let i = 0; i < bars.length; i++) {
+      const x = i * slotW + slotW / 2;
+      const y = this.priceToY(bars[i]!.c, min, max);
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(this.plotW, this.plotH);
+    ctx.closePath();
+    ctx.fill();
+
+    // overlay stroke on top
+    ctx.strokeStyle = theme.bullCandle;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i < bars.length; i++) {
+      const x = i * slotW + slotW / 2;
+      const y = this.priceToY(bars[i]!.c, min, max);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  private withAlpha(hex: string, alpha: number): string {
+    // Naive #rrggbb → rgba(r,g,b,alpha) — sufficient for theme colors here.
+    const m = /^#([0-9a-f]{6})$/i.exec(hex);
+    if (!m) return hex;
+    const n = parseInt(m[1]!, 16);
+    return `rgba(${(n >> 16) & 0xff},${(n >> 8) & 0xff},${n & 0xff},${alpha})`;
+  }
+
   drawAxes(bars: Bar[], min: number, max: number): void {
     const { ctx, theme } = this;
     ctx.fillStyle = theme.text;
