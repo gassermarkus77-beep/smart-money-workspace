@@ -2,11 +2,13 @@
 
 // ============================================================================
 // FINBERG SMC AI — Analysis workspace
-// Chart + SMC overlay + scenario panel + detection legend
 //
-// On Vercel we fetch real Binance bars in the browser. The SMC backend isn't
-// deployed here, so the analyze call is wrapped in try/catch and the panel
-// simply shows "no actionable scenario" — that's a normal state.
+// On Vercel:
+//   - LTF (15m) bars stream live from Binance WebSocket
+//   - HTF (1h/4h/1d) bars fetched once via REST per symbol change
+//   - SMC analyze endpoint is attempted; if the backend isn't deployed the
+//     overlay stays empty and the panel shows "no scenario" — chart still
+//     useful for manual analysis
 // ============================================================================
 
 import { useEffect, useMemo, useState } from 'react';
@@ -15,6 +17,7 @@ import type { Bar, Timeframe } from '@finberg/shared/market';
 import type { Scenario, SmcEvent } from '@finberg/ui/smc';
 import { ScenarioPanel, DetectionLegend } from '@finberg/ui/smc';
 import { fetchBinanceBars, POPULAR_SYMBOLS } from '../../lib/binance';
+import { useBinanceLiveBars } from '../../lib/binance-stream';
 
 const Chart = dynamic(() => import('@finberg/ui').then(m => ({ default: m.Chart })), {
   ssr: false,
@@ -32,51 +35,50 @@ const LTF: Timeframe = '15m';
 
 export default function SmcPage(): JSX.Element {
   const [symbol, setSymbol] = useState('BTCUSDT');
-  const [bars, setBars] = useState<Record<Timeframe, Bar[]>>({} as Record<Timeframe, Bar[]>);
+  const [htfBars, setHtfBars] = useState<Record<Timeframe, Bar[]>>({} as Record<Timeframe, Bar[]>);
+  const [htfLoading, setHtfLoading] = useState(true);
   const [scenario, setScenario] = useState<Scenario | null>(null);
   const [events, setEvents] = useState<SmcEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [active, setActive] = useState<Set<SmcEvent['kind']>>(new Set(ALL_KINDS));
 
+  // LTF streams live; HTF refreshes per symbol change
+  const live = useBinanceLiveBars(symbol, LTF, 500);
+
+  // HTF backfill
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    (async () => {
-      // Fetch all timeframes in parallel from Binance.
-      const allBars: Record<Timeframe, Bar[]> = {} as Record<Timeframe, Bar[]>;
-      const results = await Promise.all(
-        [...HTF, LTF].map(async (tf) => {
-          try {
-            return { tf, bars: await fetchBinanceBars(symbol, tf, 500) };
-          } catch {
-            return { tf, bars: [] as Bar[] };
-          }
-        }),
-      );
+    setHtfLoading(true);
+    Promise.all(
+      HTF.map(async (tf) => {
+        try { return { tf, bars: await fetchBinanceBars(symbol, tf, 500) }; }
+        catch { return { tf, bars: [] as Bar[] }; }
+      }),
+    ).then((rs) => {
       if (cancelled) return;
-      for (const r of results) allBars[r.tf] = r.bars;
-      setBars(allBars);
+      const acc: Record<Timeframe, Bar[]> = {} as Record<Timeframe, Bar[]>;
+      for (const r of rs) acc[r.tf] = r.bars;
+      setHtfBars(acc);
+      setHtfLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [symbol]);
 
-      if (results.every(r => r.bars.length === 0)) {
-        setError(`Could not load ${symbol} from Binance. Try a valid pair like BTCUSDT, ETHUSDT.`);
-        setLoading(false);
-        return;
-      }
-
-      // SMC analyze service isn't deployed on Vercel. Try the proxy anyway —
-      // if it 404s we just show the chart with no overlay (still useful).
+  // SMC analyze — try backend (will fail on Vercel, that's OK)
+  useEffect(() => {
+    if (live.bars.length === 0 || htfLoading) return;
+    let cancelled = false;
+    (async () => {
       try {
+        const body = {
+          symbol, assetClass: 'crypto',
+          bars: { ...htfBars, [LTF]: live.bars },
+          entryTimeframe: LTF, htfTimeframes: HTF,
+          timezone: 'UTC', upgradeCommentary: false,
+        };
         const res = await fetch('/api/proxy/smc/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            symbol, assetClass: 'crypto',
-            bars: allBars, entryTimeframe: LTF, htfTimeframes: HTF,
-            timezone: 'UTC', upgradeCommentary: false,
-          }),
+          body: JSON.stringify(body),
         });
         if (!res.ok) throw new Error('analyze unavailable');
         const json = await res.json() as {
@@ -88,21 +90,18 @@ export default function SmcPage(): JSX.Element {
         setScenario(json.scenario);
         setEvents([...json.ltfState.events, ...json.htfStates.flatMap(s => s.events)]);
       } catch {
-        // Backend not deployed — graceful empty state.
         if (!cancelled) { setScenario(null); setEvents([]); }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     })();
-
     return () => { cancelled = true; };
-  }, [symbol]);
+  // Re-run only on symbol change or when HTF finishes loading; the live LTF
+  // updates are too frequent to trigger a new analyze every tick.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbol, htfLoading]);
 
-  const ltfBars = useMemo(() => bars[LTF] ?? [], [bars]);
   const visibleEvents = useMemo(() => events.filter(e => active.has(e.kind)), [events, active]);
-  const lastBar = ltfBars.at(-1);
-
-  const refresh = (): void => setSymbol(s => s);
+  const lastBar = live.bars.at(-1);
+  const isLoading = live.bars.length === 0 && !live.error;
 
   return (
     <div className="h-screen flex flex-col">
@@ -111,6 +110,7 @@ export default function SmcPage(): JSX.Element {
           <div className="w-2 h-2 rounded-full bg-accent" />
           <h1 className="text-sm font-semibold tracking-wide">FINBERG SMC AI</h1>
         </div>
+
         <input
           value={symbol}
           onChange={(e) => setSymbol(e.target.value.toUpperCase())}
@@ -121,13 +121,18 @@ export default function SmcPage(): JSX.Element {
         <datalist id="finberg-smc-symbols">
           {POPULAR_SYMBOLS.map(s => <option key={s} value={s} />)}
         </datalist>
+
+        <ConnectionDot connected={live.connected} />
+
         {lastBar && (
           <span className="font-mono text-xs text-text-muted">
-            {lastBar.c.toFixed(2)} <span className={lastBar.c >= lastBar.o ? 'text-accent' : 'text-danger'}>
+            {lastBar.c.toFixed(2)}{' '}
+            <span className={lastBar.c >= lastBar.o ? 'text-accent' : 'text-danger'}>
               ({(((lastBar.c - lastBar.o) / lastBar.o) * 100).toFixed(2)}%)
             </span>
           </span>
         )}
+
         <div className="ml-2 flex-1 overflow-x-auto">
           <DetectionLegend active={active} onToggle={(k) => {
             setActive(prev => {
@@ -139,26 +144,45 @@ export default function SmcPage(): JSX.Element {
         </div>
       </header>
 
-      {error && (
+      {live.error && (
         <div className="px-4 py-2 bg-danger/10 text-danger text-xs border-b border-danger/30">
-          {error}
+          {live.error}
         </div>
       )}
 
       <main className="flex-1 flex">
         <div className="flex-1 relative">
-          {ltfBars.length > 0
-            ? <Chart symbol={symbol} timeframe={LTF} bars={ltfBars} />
-            : !loading && <div className="h-full flex items-center justify-center text-text-subtle">No bars to display</div>
+          {isLoading
+            ? <div className="h-full flex items-center justify-center text-text-subtle">Loading {symbol} from Binance…</div>
+            : <Chart symbol={symbol} timeframe={LTF} bars={live.bars} />
           }
           <div className="absolute top-2 left-2 text-[10px] text-text-subtle font-mono opacity-70">
             {events.length === 0
-              ? 'SMC backend offline — chart shows live Binance data'
+              ? 'SMC backend offline — live Binance WebSocket only'
               : `${events.length} events (${visibleEvents.length} visible)`}
           </div>
         </div>
-        <ScenarioPanel scenario={scenario} loading={loading} onRefresh={refresh} />
+        <ScenarioPanel
+          scenario={scenario}
+          loading={isLoading || htfLoading}
+          onRefresh={() => setSymbol(s => s)}
+        />
       </main>
     </div>
+  );
+}
+
+function ConnectionDot({ connected }: { connected: boolean }): JSX.Element {
+  return (
+    <span className="flex items-center gap-1.5 text-[11px] font-mono">
+      <span className={`relative inline-flex w-2 h-2 rounded-full ${connected ? 'bg-accent' : 'bg-yellow-500'}`}>
+        {connected && (
+          <span className="absolute inset-0 rounded-full bg-accent animate-ping opacity-60" />
+        )}
+      </span>
+      <span className={connected ? 'text-accent' : 'text-yellow-500'}>
+        {connected ? 'LIVE' : 'connecting…'}
+      </span>
+    </span>
   );
 }
