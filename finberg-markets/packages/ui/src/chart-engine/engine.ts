@@ -43,7 +43,10 @@ export interface ChartConfig {
   theme?: ChartTheme;
   showVolume?: boolean;
   initialBars?: Bar[];
+  chartType?: ChartType;
 }
+
+export type ChartType = 'candles' | 'line' | 'area' | 'bars' | 'heikin-ashi';
 
 export class ChartEngine {
   private readonly canvas: HTMLCanvasElement;
@@ -52,6 +55,7 @@ export class ChartEngine {
   private readonly crosshair: CrosshairController;
   private readonly series: Series[] = [];
   private readonly theme: ChartTheme;
+  private chartType: ChartType = 'candles';
 
   /** Viewport: index of leftmost visible bar + visible bar count. */
   private viewStart = 0;
@@ -67,6 +71,7 @@ export class ChartEngine {
 
   constructor(private readonly config: ChartConfig) {
     this.theme = config.theme ?? DARK_THEME;
+    this.chartType = config.chartType ?? 'candles';
 
     this.canvas = document.createElement('canvas');
     this.canvas.style.cssText = 'display:block;width:100%;height:100%;cursor:crosshair;';
@@ -105,6 +110,11 @@ export class ChartEngine {
     (this as { theme: ChartTheme }).theme = theme;
     this.renderer.setTheme(theme);
     this.crosshair.setTheme(theme);
+    this.invalidate();
+  }
+
+  setChartType(type: ChartType): void {
+    this.chartType = type;
     this.invalidate();
   }
 
@@ -194,12 +204,22 @@ export class ChartEngine {
       return;
     }
 
-    const { min, max } = this.priceRange(visible);
+    const series = this.chartType === 'heikin-ashi' ? toHeikinAshi(visible) : visible;
+    const { min, max } = this.priceRange(series);
     this.renderer.beginFrame();
     this.renderer.drawGrid(min, max);
-    this.renderer.drawCandles(visible, min, max);
-    for (const s of this.series) s.draw(this.renderer, visible, min, max);
-    this.renderer.drawAxes(visible, min, max);
+
+    switch (this.chartType) {
+      case 'line':         this.renderer.drawLineChart(series, min, max); break;
+      case 'area':         this.renderer.drawAreaChart(series, min, max); break;
+      case 'bars':         this.renderer.drawBars(series, min, max); break;
+      case 'candles':
+      case 'heikin-ashi':
+      default:             this.renderer.drawCandles(series, min, max); break;
+    }
+
+    for (const s of this.series) s.draw(this.renderer, series, min, max);
+    this.renderer.drawAxes(series, min, max);
     this.crosshair.draw(this.renderer.ctx);
   }
 
@@ -212,4 +232,22 @@ export class ChartEngine {
     const pad = (max - min) * 0.05;
     return { min: min - pad, max: max + pad };
   }
+}
+
+/** Heikin Ashi candle transform — smoother trend visualization. */
+function toHeikinAshi(bars: Bar[]): Bar[] {
+  if (bars.length === 0) return bars;
+  const out: Bar[] = [];
+  let prevO = bars[0]!.o;
+  let prevC = bars[0]!.c;
+  for (const b of bars) {
+    const haClose = (b.o + b.h + b.l + b.c) / 4;
+    const haOpen  = out.length === 0 ? (b.o + b.c) / 2 : (prevO + prevC) / 2;
+    const haHigh  = Math.max(b.h, haOpen, haClose);
+    const haLow   = Math.min(b.l, haOpen, haClose);
+    out.push({ t: b.t, o: haOpen, h: haHigh, l: haLow, c: haClose, v: b.v });
+    prevO = haOpen;
+    prevC = haClose;
+  }
+  return out;
 }
