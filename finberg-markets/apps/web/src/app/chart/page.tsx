@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import type { Bar, Timeframe } from '@finberg/shared/market';
 import { TIMEFRAMES } from '@finberg/shared';
+import { fetchBinanceBars, POPULAR_SYMBOLS } from '../../lib/binance';
 
 // ChartEngine uses window/canvas — only render client-side.
 const Chart = dynamic(
@@ -13,24 +14,40 @@ const Chart = dynamic(
 
 const DEFAULT_SYMBOL = 'BTCUSDT';
 const DEFAULT_TF: Timeframe = '1h';
+const REFRESH_MS = 30_000;     // auto-refresh every 30s
 
 export default function ChartPage(): JSX.Element {
   const [symbol, setSymbol] = useState(DEFAULT_SYMBOL);
   const [timeframe, setTimeframe] = useState<Timeframe>(DEFAULT_TF);
   const [bars, setBars] = useState<Bar[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+
+    const load = async (): Promise<void> => {
+      try {
+        const data = await fetchBinanceBars(symbol, timeframe, 500);
+        if (cancelled) return;
+        setBars(data);
+        setError(null);
+        setLastUpdated(Date.now());
+      } catch (e) {
+        if (cancelled) return;
+        setError(`Could not load ${symbol} from Binance. Check the symbol (e.g. BTCUSDT, ETHUSDT).`);
+        setBars(syntheticBars(symbol, timeframe, 500));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
     setLoading(true);
-    const to = Date.now();
-    const from = to - 1000 * 60 * 60 * 24 * 30;
-    fetch(`/api/proxy/market/bars?symbol=${symbol}&timeframe=${timeframe}&from=${from}&to=${to}&limit=500`)
-      .then(r => r.json())
-      .then((data: Bar[]) => { if (!cancelled) setBars(data); })
-      .catch(() => { if (!cancelled) setBars(syntheticBars(symbol, timeframe, 500)); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    void load();
+    const id = setInterval(load, REFRESH_MS);
+
+    return () => { cancelled = true; clearInterval(id); };
   }, [symbol, timeframe]);
 
   const headerBar = useMemo(() => bars.at(-1), [bars]);
@@ -41,8 +58,13 @@ export default function ChartPage(): JSX.Element {
         <input
           value={symbol}
           onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+          list="finberg-symbols"
+          spellCheck={false}
           className="bg-bg-subtle text-text px-3 py-1.5 rounded font-mono text-sm border border-bg-elevated focus:outline-none focus:ring-2 focus:ring-accent w-32"
         />
+        <datalist id="finberg-symbols">
+          {POPULAR_SYMBOLS.map(s => <option key={s} value={s} />)}
+        </datalist>
         <div className="flex gap-1">
           {TIMEFRAMES.filter(tf => ['1m','5m','15m','1h','4h','1d','1w'].includes(tf)).map(tf => (
             <button
@@ -60,12 +82,22 @@ export default function ChartPage(): JSX.Element {
             <span>H <span className="text-text">{headerBar.h.toFixed(2)}</span></span>
             <span>L <span className="text-text">{headerBar.l.toFixed(2)}</span></span>
             <span>C <span className={headerBar.c >= headerBar.o ? 'text-accent' : 'text-danger'}>{headerBar.c.toFixed(2)}</span></span>
+            {lastUpdated && (
+              <span className="text-text-subtle">
+                · live ({Math.round((Date.now() - lastUpdated) / 1000)}s ago)
+              </span>
+            )}
           </div>
         )}
       </header>
+      {error && (
+        <div className="px-4 py-2 bg-danger/10 text-danger text-xs border-b border-danger/30">
+          {error}
+        </div>
+      )}
       <main className="flex-1">
         {loading
-          ? <div className="h-full flex items-center justify-center text-text-subtle">Loading…</div>
+          ? <div className="h-full flex items-center justify-center text-text-subtle">Loading {symbol} from Binance…</div>
           : <Chart symbol={symbol} timeframe={timeframe} bars={bars} />
         }
       </main>
@@ -73,7 +105,7 @@ export default function ChartPage(): JSX.Element {
   );
 }
 
-// Fallback for local dev when the API isn't running.
+// Fallback when Binance is unreachable (offline / blocked / unknown symbol).
 function syntheticBars(symbol: string, timeframe: Timeframe, n: number): Bar[] {
   const tfMs: Record<string, number> = { '1m': 60_000, '5m': 300_000, '15m': 900_000, '1h': 3_600_000, '4h': 14_400_000, '1d': 86_400_000, '1w': 604_800_000 };
   const step = tfMs[timeframe] ?? 3_600_000;
