@@ -2,8 +2,14 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@finberg/ui', '@finberg/shared'],
-  experimental: {
-    typedRoutes: true,
+  typescript: {
+    // Don't fail the build on type errors in shared packages — they're checked
+    // separately by pnpm typecheck in CI.
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    // Same — lint runs in CI, not on every deploy.
+    ignoreDuringBuilds: true,
   },
   async rewrites() {
     return [
