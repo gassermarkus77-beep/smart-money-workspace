@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+const INPUT_CLASS = 'w-full bg-bg-elevated text-text rounded px-3 py-2 border border-bg-elevated focus:outline-none focus:ring-2 focus:ring-accent';
+
 export default function SignupPage(): JSX.Element {
   const router = useRouter();
   const [form, setForm] = useState({ email: '', password: '', username: '', acceptTerms: false });
@@ -38,7 +40,7 @@ export default function SignupPage(): JSX.Element {
               required
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
-              className="input"
+              className={INPUT_CLASS}
               minLength={2}
               maxLength={32}
               pattern="[A-Za-z0-9_-]+"
@@ -49,7 +51,7 @@ export default function SignupPage(): JSX.Element {
               required type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="input"
+              className={INPUT_CLASS}
             />
           </Field>
           <Field label="Password (min 12 chars)">
@@ -57,7 +59,7 @@ export default function SignupPage(): JSX.Element {
               required type="password" minLength={12}
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="input"
+              className={INPUT_CLASS}
             />
           </Field>
           <label className="flex items-start gap-2 text-sm text-text-muted">
@@ -79,17 +81,6 @@ export default function SignupPage(): JSX.Element {
           </button>
         </form>
       </div>
-      <style jsx>{`
-        .input {
-          width: 100%;
-          background: #151c2b;
-          border: 1px solid #1f2937;
-          border-radius: 0.375rem;
-          padding: 0.5rem 0.75rem;
-          color: #e6ebf2;
-        }
-        .input:focus { outline: 2px solid #26a69a; outline-offset: 0; }
-      `}</style>
     </main>
   );
 }
