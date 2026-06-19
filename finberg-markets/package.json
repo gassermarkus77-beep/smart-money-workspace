@@ -37,5 +37,19 @@
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": ["prettier --write", "eslint --fix"],
     "*.{json,md,yml,yaml}": ["prettier --write"]
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "19.0.0",
+      "react-dom": "19.0.0",
+      "@types/react": "19.0.0",
+      "@types/react-dom": "19.0.0"
+    },
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "react": "19",
+        "react-dom": "19"
+      }
+    }
   }
 }
