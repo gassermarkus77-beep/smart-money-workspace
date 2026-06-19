@@ -1,0 +1,66 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Builds
+dist/
+build/
+.next/
+out/
+.turbo/
+.expo/
+
+# Env
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Coverage / tests
+coverage/
+.nyc_output
+playwright-report/
+test-results/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Go
+vendor/
+*.test
+
+# Rust
+target/
+
+# Local dev
+*.local
+tmp/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Secrets / keys
+*.pem
+*.key
+*.crt
+
+# Database
+*.db
+*.sqlite

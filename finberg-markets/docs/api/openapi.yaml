@@ -1,0 +1,182 @@
+openapi: 3.1.0
+info:
+  title: FINBERG MARKETS API
+  version: 1.0.0
+  description: |
+    Public + internal HTTP API for FINBERG MARKETS.
+    All endpoints are versioned under `/v1`. JSON over HTTPS.
+servers:
+  - url: https://api.finberg.markets/v1
+  - url: http://localhost:4000/v1
+    description: local dev
+
+tags:
+  - name: auth
+  - name: users
+  - name: market
+  - name: alerts
+  - name: indicators
+  - name: ai
+  - name: social
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Bar:
+      type: object
+      required: [t, o, h, l, c, v]
+      properties:
+        t: { type: integer, format: int64, description: epoch ms UTC }
+        o: { type: number }
+        h: { type: number }
+        l: { type: number }
+        c: { type: number }
+        v: { type: number }
+        n: { type: integer }
+        vwap: { type: number }
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object }
+
+paths:
+  /auth/signup:
+    post:
+      tags: [auth]
+      summary: Create an account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, username, acceptTerms]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 12 }
+                username: { type: string, minLength: 2, maxLength: 32 }
+                acceptTerms: { type: boolean, enum: [true] }
+                marketingOptIn: { type: boolean, default: false }
+      responses:
+        '201':
+          description: Account created
+        '400':
+          description: Validation failed
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Exchange credentials for a token pair
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                totp: { type: string, pattern: '^\d{6}$' }
+      responses:
+        '200': { description: OK }
+        '401': { description: Invalid credentials }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Rotate refresh token, return a fresh token pair
+
+  /market/bars:
+    get:
+      tags: [market]
+      summary: Fetch historical OHLCV bars
+      parameters:
+        - in: query
+          name: symbol
+          required: true
+          schema: { type: string }
+        - in: query
+          name: timeframe
+          required: true
+          schema: { type: string, enum: ['1s','5s','15s','30s','1m','3m','5m','15m','30m','1h','2h','4h','1d','3d','1w','1M'] }
+        - in: query
+          name: from
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: query
+          name: to
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 1000, maximum: 5000 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Bar' }
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /market/search:
+    get:
+      tags: [market]
+      summary: Symbol search
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        '200': { description: OK }
+
+  /alerts:
+    get:
+      tags: [alerts]
+      summary: List my alerts
+      responses: { '200': { description: OK } }
+    post:
+      tags: [alerts]
+      summary: Create an alert
+      responses: { '201': { description: Created } }
+
+  /indicators/scripts:
+    get:
+      tags: [indicators]
+      summary: List my scripts
+    post:
+      tags: [indicators]
+      summary: Create or update a script
+
+  /ai/analyze:
+    post:
+      tags: [ai]
+      summary: Stream chart analysis (SSE)
+      responses:
+        '200':
+          description: text/event-stream
+          content:
+            text/event-stream:
+              schema: { type: string }
+
+  /social/posts:
+    get: { tags: [social], summary: List public posts }
+    post: { tags: [social], summary: Create an idea / note / question }

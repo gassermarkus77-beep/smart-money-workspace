@@ -1,0 +1,48 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+    paths: ['finberg-markets/**']
+  pull_request:
+    paths: ['finberg-markets/**']
+  schedule:
+    - cron: '0 4 * * 1'      # weekly full scan
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/owasp-top-ten p/typescript p/javascript p/nodejs p/secrets
+
+  trivy-fs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          scan-ref: finberg-markets
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+      - uses: github/codeql-action/upload-sarif@v3
+        with: { sarif_file: trivy-results.sarif }
+
+  snyk:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SNYK_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snyk/actions/node@master
+        env: { SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} }
+        with: { args: --severity-threshold=high --all-projects --detection-depth=4 }
