@@ -2,7 +2,7 @@
 // Crosshair — pointer-tracking overlay; shared across linked panes.
 // ============================================================================
 
-import type { ChartTheme } from './engine.js';
+import type { ChartTheme } from './engine';
 
 export class CrosshairController {
   private x = -1;

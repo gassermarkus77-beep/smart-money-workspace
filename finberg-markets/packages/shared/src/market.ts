@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { z } from 'zod';
-import { ASSET_CLASSES, TIMEFRAMES, type AssetClass, type Timeframe } from './constants.js';
+import { ASSET_CLASSES, TIMEFRAMES, type AssetClass, type Timeframe } from './constants';
 
 // ----- Instrument ----------------------------------------------------------
 export const InstrumentSchema = z.object({

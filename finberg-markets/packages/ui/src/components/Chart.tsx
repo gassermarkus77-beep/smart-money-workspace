@@ -4,7 +4,7 @@
 
 import { useEffect, useRef } from 'react';
 import type { Bar, Timeframe } from '@finberg/shared/market';
-import { ChartEngine, DARK_THEME, type ChartTheme } from '../chart-engine/engine.js';
+import { ChartEngine, DARK_THEME, type ChartTheme } from '../chart-engine/engine';
 
 export interface ChartProps {
   symbol: string;

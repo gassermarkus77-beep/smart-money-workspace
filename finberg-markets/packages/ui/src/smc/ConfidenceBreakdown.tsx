@@ -3,7 +3,7 @@
 // scenario confidence score, so users (and our future selves) know why.
 // ============================================================================
 
-import type { ConfidenceBreakdown as Breakdown } from './types.js';
+import type { ConfidenceBreakdown as Breakdown } from './types';
 
 const LABELS: Record<keyof Breakdown, string> = {
   htfBiasStrength:    'HTF bias agreement',

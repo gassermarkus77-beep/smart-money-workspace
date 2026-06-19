@@ -7,10 +7,10 @@
 // ============================================================================
 
 import type { Bar, Timeframe } from '@finberg/shared/market';
-import { Renderer } from './renderer.js';
-import { DataSource } from './datasource.js';
-import { CrosshairController } from './crosshair.js';
-import type { Series } from './series.js';
+import { Renderer } from './renderer';
+import { DataSource } from './datasource';
+import { CrosshairController } from './crosshair';
+import type { Series } from './series';
 
 export interface ChartTheme {
   background: string;

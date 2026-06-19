@@ -4,9 +4,9 @@
 // plot, alert, etc. The Runtime is supplied by the host (Web Worker).
 // ============================================================================
 
-import type { AstNode, ScriptNode } from './ast.js';
-import { tokenize } from './lexer.js';
-import { parse } from './parser.js';
+import type { AstNode, ScriptNode } from './ast';
+import { tokenize } from './lexer';
+import { parse } from './parser';
 
 export interface CompileOptions {
   /** Module name to import the runtime from. */

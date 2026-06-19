@@ -4,8 +4,8 @@
 // ============================================================================
 
 import { useMemo } from 'react';
-import type { Scenario } from './types.js';
-import { ConfidenceBreakdown } from './ConfidenceBreakdown.js';
+import type { Scenario } from './types';
+import { ConfidenceBreakdown } from './ConfidenceBreakdown';
 
 export interface ScenarioPanelProps {
   scenario: Scenario | null;

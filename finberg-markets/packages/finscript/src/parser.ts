@@ -4,13 +4,13 @@
 // to keep precedence handling sane.
 // ============================================================================
 
-import type { Token } from './lexer.js';
+import type { Token } from './lexer';
 import type {
   AstNode, ScriptNode, ScriptHeader,
   DeclarationNode, ExpressionStatementNode, IfNode,
   CallNode, BinaryNode, UnaryNode,
   IdentifierNode, NumberNode, StringNode, BoolNode, NaNode,
-} from './ast.js';
+} from './ast';
 
 // Operator precedence (higher = tighter binding)
 const BINARY_PREC: Record<string, number> = {

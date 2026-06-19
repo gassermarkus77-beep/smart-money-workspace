@@ -4,7 +4,7 @@
 // ============================================================================
 
 import type { Bar } from '@finberg/shared/market';
-import type { ChartTheme } from './engine.js';
+import type { ChartTheme } from './engine';
 
 const AXIS_WIDTH = 64;          // right-side price axis
 const AXIS_HEIGHT = 24;         // bottom time axis

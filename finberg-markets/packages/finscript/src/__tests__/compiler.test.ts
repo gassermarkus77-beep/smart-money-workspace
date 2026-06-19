@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compile } from '../compiler.js';
+import { compile } from '../compiler';
 
 describe('FinScript compiler', () => {
   it('compiles a minimal indicator header', () => {

@@ -9,7 +9,7 @@
 
 import { useMemo } from 'react';
 import type { Bar } from '@finberg/shared/market';
-import type { SmcEvent } from './types.js';
+import type { SmcEvent } from './types';
 
 export interface SmcOverlayProps {
   events: SmcEvent[];
