@@ -3,7 +3,7 @@
 // ============================================================================
 
 import type { Bar } from '@finberg/shared/market';
-import type { Renderer } from './renderer.js';
+import type { Renderer } from './renderer';
 
 export interface Series {
   draw(renderer: Renderer, visibleBars: Bar[], min: number, max: number): void;

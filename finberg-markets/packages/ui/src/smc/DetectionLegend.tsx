@@ -3,7 +3,7 @@
 // chart header. The active set is controlled by the parent.
 // ============================================================================
 
-import type { SmcEvent } from './types.js';
+import type { SmcEvent } from './types';
 
 const ENTRIES: Array<{ kind: SmcEvent['kind']; label: string; swatch: string }> = [
   { kind: 'FVG',       label: 'FVG',          swatch: 'bg-emerald-500/30' },

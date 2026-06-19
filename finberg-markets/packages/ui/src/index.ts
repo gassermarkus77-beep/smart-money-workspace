@@ -1,3 +1,3 @@
-export * from './chart-engine/index.js';
-export * from './components/index.js';
-export * from './smc/index.js';
+export * from './chart-engine/index';
+export * from './components/index';
+export * from './smc/index';

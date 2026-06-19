@@ -1,3 +1,3 @@
-export { Chart } from './Chart.js';
-export { Button } from './Button.js';
-export { cn } from './cn.js';
+export { Chart } from './Chart';
+export { Button } from './Button';
+export { cn } from './cn';

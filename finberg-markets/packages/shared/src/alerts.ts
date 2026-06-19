@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TIMEFRAMES } from './constants.js';
+import { TIMEFRAMES } from './constants';
 
 export const ChannelSchema = z.enum([
   'in_app', 'email', 'push', 'telegram', 'slack', 'discord', 'webhook', 'sms',
