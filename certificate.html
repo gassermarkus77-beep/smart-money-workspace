@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Certificate of Completion - Markus Gasser</title>
+<style>
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 20px;
+    font-family: 'Times New Roman', Times, serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  .certificate {
+    width: 1100px;
+    height: 800px;
+    background: #fefefe;
+    position: relative;
+    padding: 28px;
+    border: 3px solid #1e4a8a;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+  }
+
+  .inner-border {
+    width: 100%;
+    height: 100%;
+    border: 1px solid #1e4a8a;
+    padding: 40px 60px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .logo {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .logo-triangle {
+    display: inline-block;
+    width: 70px;
+    height: 50px;
+    position: relative;
+  }
+
+  .logo-triangle svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .logo-text {
+    font-size: 11px;
+    color: #1e4a8a;
+    font-weight: bold;
+    letter-spacing: 1px;
+    line-height: 1.2;
+    margin-top: 2px;
+  }
+
+  .title {
+    text-align: center;
+    font-size: 42px;
+    color: #0a2a52;
+    margin: 8px 0 4px;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+
+  .title .small-caps {
+    font-size: 30px;
+  }
+
+  .subtitle {
+    text-align: center;
+    font-size: 26px;
+    color: #0a2a52;
+    margin-bottom: 18px;
+    letter-spacing: 2px;
+  }
+
+  .qr {
+    text-align: center;
+    margin: 6px 0 14px;
+  }
+
+  .qr-code {
+    width: 70px;
+    height: 70px;
+    display: inline-block;
+    background:
+      linear-gradient(45deg, #000 25%, transparent 25%) 0 0/14px 14px,
+      linear-gradient(-45deg, #000 25%, transparent 25%) 0 0/14px 14px,
+      linear-gradient(45deg, transparent 75%, #000 75%) 0 0/14px 14px,
+      linear-gradient(-45deg, transparent 75%, #000 75%) 0 0/14px 14px,
+      #fff;
+    border: 2px solid #000;
+    position: relative;
+  }
+
+  .qr-code::before,
+  .qr-code::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border: 4px solid #000;
+  }
+
+  .qr-code::before { top: 4px; left: 4px; }
+  .qr-code::after { top: 4px; right: 4px; }
+
+  .certifies-text {
+    text-align: center;
+    font-size: 18px;
+    color: #1a1a1a;
+    margin-top: 4px;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+
+  .name {
+    text-align: center;
+    font-size: 32px;
+    font-weight: bold;
+    color: #0a2a52;
+    margin: 18px auto 4px;
+    letter-spacing: 2px;
+    border-bottom: 1.5px solid #0a2a52;
+    display: inline-block;
+    padding: 0 80px 4px;
+  }
+
+  .name-wrapper {
+    text-align: center;
+  }
+
+  .program-text {
+    text-align: center;
+    font-size: 14px;
+    color: #1a1a1a;
+    margin: 22px 0 18px;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+  }
+
+  .details {
+    margin: 8px 0;
+    text-align: center;
+    font-size: 14px;
+    color: #1a1a1a;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+
+  .details .label {
+    display: inline-block;
+    margin-right: 14px;
+  }
+
+  .details .value {
+    display: inline-block;
+    border-bottom: 1px solid #0a2a52;
+    min-width: 220px;
+    padding: 0 14px 2px;
+    color: #0a2a52;
+  }
+
+  .signatures {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: auto;
+    padding-top: 30px;
+  }
+
+  .signature {
+    text-align: center;
+    width: 200px;
+  }
+
+  .signature-line {
+    font-family: 'Brush Script MT', 'Lucida Handwriting', cursive;
+    font-size: 32px;
+    color: #1a1a1a;
+    height: 40px;
+    border-bottom: 1px solid #1a1a1a;
+    margin-bottom: 4px;
+    font-style: italic;
+  }
+
+  .signature-name {
+    font-size: 13px;
+    font-weight: bold;
+    color: #1a1a1a;
+  }
+
+  .signature-title {
+    font-size: 11px;
+    color: #1a1a1a;
+    font-style: italic;
+  }
+
+  .badges {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin: 6px 0;
+  }
+
+  .badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #f4d57a, #c8941e 60%, #8b6914);
+    border: 2px solid #8b6914;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 5px;
+    color: #1a3a6a;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1.1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+
+  .badge .year {
+    font-size: 9px;
+    margin-top: 1px;
+  }
+
+  @media print {
+    body { background: white; padding: 0; }
+    .certificate { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="certificate">
+    <div class="inner-border">
+
+      <div class="logo">
+        <div class="logo-triangle">
+          <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="50,5 95,65 5,65" fill="none" stroke="#1e4a8a" stroke-width="3"/>
+            <polygon points="50,20 80,60 20,60" fill="#1e4a8a"/>
+            <polygon points="50,32 70,58 30,58" fill="#fff"/>
+          </svg>
+        </div>
+        <div class="logo-text">ACADEMY OF<br>FINANCIAL<br>TRADING</div>
+      </div>
+
+      <div class="title">T<span class="small-caps">HE</span> A<span class="small-caps">CADEMY</span> O<span class="small-caps">F</span> F<span class="small-caps">INANCIAL</span> T<span class="small-caps">RADING</span></div>
+      <div class="subtitle">CERTIFICATE OF COMPLETION</div>
+
+      <div class="qr">
+        <div class="qr-code"></div>
+      </div>
+
+      <div class="certifies-text">THIS CERTIFIES THAT</div>
+
+      <div class="name-wrapper">
+        <div class="name">MARKUS GASSER</div>
+      </div>
+
+      <div class="program-text">HAS SUCCESSFULLY COMPLETED THE ADVANCED TRADING PROGRAMME</div>
+
+      <div class="details">
+        <span class="label">DATED</span>
+        <span class="value">JULY 15, 2017</span>
+      </div>
+
+      <div class="details">
+        <span class="label">WITH THE RESULT</span>
+        <span class="value">EXCELLENT</span>
+      </div>
+
+      <div class="signatures">
+        <div class="signature">
+          <div class="signature-line">J. Egan</div>
+          <div class="signature-name">James Egan</div>
+          <div class="signature-title">Director of Trading and Education</div>
+        </div>
+
+        <div class="badges">
+          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>EDUCATOR</div><div class="year">2012</div></div>
+          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>EDUCATOR</div><div class="year">2013</div></div>
+          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>ACADEMY</div><div class="year">2014</div></div>
+          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>ACADEMY</div><div class="year">2014</div></div>
+          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>ACADEMY</div><div class="year">2014</div></div>
+          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>ACADEMY</div><div class="year">2015</div></div>
+          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>ACADEMY</div><div class="year">2015</div></div>
+          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>ACADEMY</div><div class="year">2015</div></div>
+        </div>
+
+        <div class="signature">
+          <div class="signature-line">A. Murphy</div>
+          <div class="signature-name">Adrian Murphy</div>
+          <div class="signature-title">Director of Operations</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
