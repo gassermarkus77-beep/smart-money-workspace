@@ -2,246 +2,341 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Certificate of Completion - Markus Gasser</title>
+<title>Certificate of Completion — Markus Gasser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Great+Vibes&family=Pinyon+Script&display=swap" rel="stylesheet">
 <style>
   @page {
     size: A4 landscape;
     margin: 0;
   }
 
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0b2a52;
+    --navy-light: #1e4a8a;
+    --gold: #b8902a;
+    --gold-light: #e6c659;
+    --gold-dark: #8b6914;
+    --paper: #faf6ec;
+    --paper-shadow: #e8dfc8;
+    --ink: #1a1a1a;
+  }
 
   body {
-    margin: 0;
-    padding: 20px;
-    font-family: 'Times New Roman', Times, serif;
-    background: #e8e8e8;
+    font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+    background: #2a2a35;
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
+    padding: 30px;
   }
 
   .certificate {
-    width: 1100px;
-    height: 800px;
-    background: #fefefe;
-    position: relative;
-    padding: 28px;
-    border: 3px solid #1e4a8a;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.25);
-  }
-
-  .inner-border {
-    width: 100%;
-    height: 100%;
-    border: 1px solid #1e4a8a;
-    padding: 40px 60px;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .logo {
-    text-align: center;
-    margin-bottom: 10px;
-  }
-
-  .logo-triangle {
-    display: inline-block;
-    width: 70px;
-    height: 50px;
-    position: relative;
-  }
-
-  .logo-triangle svg {
-    width: 100%;
-    height: 100%;
-  }
-
-  .logo-text {
-    font-size: 11px;
-    color: #1e4a8a;
-    font-weight: bold;
-    letter-spacing: 1px;
-    line-height: 1.2;
-    margin-top: 2px;
-  }
-
-  .title {
-    text-align: center;
-    font-size: 42px;
-    color: #0a2a52;
-    margin: 8px 0 4px;
-    font-weight: bold;
-    letter-spacing: 1px;
-  }
-
-  .title .small-caps {
-    font-size: 30px;
-  }
-
-  .subtitle {
-    text-align: center;
-    font-size: 26px;
-    color: #0a2a52;
-    margin-bottom: 18px;
-    letter-spacing: 2px;
-  }
-
-  .qr {
-    text-align: center;
-    margin: 6px 0 14px;
-  }
-
-  .qr-code {
-    width: 70px;
-    height: 70px;
-    display: inline-block;
+    width: 1180px;
+    height: 840px;
     background:
-      linear-gradient(45deg, #000 25%, transparent 25%) 0 0/14px 14px,
-      linear-gradient(-45deg, #000 25%, transparent 25%) 0 0/14px 14px,
-      linear-gradient(45deg, transparent 75%, #000 75%) 0 0/14px 14px,
-      linear-gradient(-45deg, transparent 75%, #000 75%) 0 0/14px 14px,
-      #fff;
-    border: 2px solid #000;
+      radial-gradient(ellipse at center, var(--paper) 0%, var(--paper-shadow) 100%),
+      var(--paper);
     position: relative;
+    box-shadow:
+      0 0 0 1px var(--paper-shadow),
+      0 30px 80px rgba(0,0,0,0.4),
+      0 10px 30px rgba(0,0,0,0.3);
+    overflow: hidden;
   }
 
-  .qr-code::before,
-  .qr-code::after {
+  /* Subtle paper grain via repeating gradient */
+  .certificate::before {
     content: '';
     position: absolute;
-    width: 18px;
-    height: 18px;
-    background: #fff;
-    border: 4px solid #000;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(45deg, transparent 0 2px, rgba(139,105,20,0.018) 2px 3px),
+      repeating-linear-gradient(-45deg, transparent 0 2px, rgba(11,42,82,0.012) 2px 3px);
+    pointer-events: none;
+    z-index: 1;
   }
 
-  .qr-code::before { top: 4px; left: 4px; }
-  .qr-code::after { top: 4px; right: 4px; }
+  /* Decorative outer border frame */
+  .frame-outer {
+    position: absolute;
+    inset: 22px;
+    border: 2px solid var(--navy);
+    z-index: 2;
+  }
 
-  .certifies-text {
+  .frame-inner {
+    position: absolute;
+    inset: 30px;
+    border: 1px solid var(--gold);
+    z-index: 2;
+  }
+
+  .frame-thin {
+    position: absolute;
+    inset: 35px;
+    border: 1px solid var(--navy);
+    z-index: 2;
+  }
+
+  /* Corner ornaments */
+  .corner {
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    z-index: 3;
+    color: var(--gold);
+  }
+  .corner-tl { top: 38px; left: 38px; }
+  .corner-tr { top: 38px; right: 38px; transform: scaleX(-1); }
+  .corner-bl { bottom: 38px; left: 38px; transform: scaleY(-1); }
+  .corner-br { bottom: 38px; right: 38px; transform: scale(-1, -1); }
+
+  /* Watermark background */
+  .watermark {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+    opacity: 0.04;
+    pointer-events: none;
+  }
+  .watermark svg { width: 520px; height: 520px; }
+
+  .content {
+    position: relative;
+    z-index: 4;
+    padding: 70px 90px 50px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Logo */
+  .logo {
     text-align: center;
-    font-size: 18px;
-    color: #1a1a1a;
-    margin-top: 4px;
-    letter-spacing: 1px;
+    margin-bottom: 18px;
+  }
+  .logo svg {
+    width: 78px;
+    height: 78px;
+  }
+  .logo-text {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    color: var(--navy);
+    letter-spacing: 3.5px;
     font-weight: 600;
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  /* Decorative divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin: 10px 0;
+    color: var(--gold);
+    width: 100%;
+  }
+  .divider-line {
+    flex: 0 1 180px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold) 50%, transparent);
+  }
+  .divider-ornament {
+    font-size: 18px;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  /* Titles */
+  .title {
+    font-family: 'Cinzel', serif;
+    font-size: 38px;
+    color: var(--navy);
+    text-align: center;
+    letter-spacing: 6px;
+    font-weight: 600;
+    margin: 8px 0 4px;
+  }
+  .subtitle {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    color: var(--gold-dark);
+    letter-spacing: 8px;
+    text-align: center;
+    margin-bottom: 22px;
+    font-weight: 500;
+  }
+
+  /* Recipient */
+  .certifies {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    color: var(--ink);
+    letter-spacing: 5px;
+    text-align: center;
+    font-style: italic;
+    margin: 8px 0 12px;
+    font-weight: 500;
   }
 
   .name {
+    font-family: 'Pinyon Script', 'Great Vibes', cursive;
+    font-size: 78px;
+    color: var(--navy);
     text-align: center;
-    font-size: 32px;
-    font-weight: bold;
-    color: #0a2a52;
-    margin: 18px auto 4px;
-    letter-spacing: 2px;
-    border-bottom: 1.5px solid #0a2a52;
-    display: inline-block;
-    padding: 0 80px 4px;
+    line-height: 1;
+    margin: 6px 0 4px;
+    text-shadow: 0 1px 0 rgba(11,42,82,0.1);
   }
 
-  .name-wrapper {
-    text-align: center;
+  .name-underline {
+    width: 480px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold) 20%, var(--gold) 80%, transparent);
+    margin: 8px auto 20px;
+  }
+
+  /* QR + program block */
+  .program-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    margin: 6px 0 18px;
   }
 
   .program-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px;
+    color: var(--ink);
     text-align: center;
-    font-size: 14px;
-    color: #1a1a1a;
-    margin: 22px 0 18px;
-    letter-spacing: 1.5px;
+    line-height: 1.5;
+    letter-spacing: 1.2px;
+    max-width: 620px;
+  }
+  .program-text strong {
+    font-family: 'Cinzel', serif;
+    font-size: 22px;
+    color: var(--navy);
+    letter-spacing: 3px;
+    display: block;
+    margin-top: 6px;
     font-weight: 600;
   }
 
+  .qr-box {
+    width: 90px;
+    height: 90px;
+    padding: 6px;
+    background: white;
+    border: 1px solid var(--navy);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+  }
+  .qr-box svg { width: 100%; height: 100%; display: block; }
+
+  /* Details row */
   .details {
-    margin: 8px 0;
+    display: flex;
+    justify-content: center;
+    gap: 70px;
+    margin: 14px 0 8px;
+  }
+  .detail {
     text-align: center;
-    font-size: 14px;
-    color: #1a1a1a;
-    letter-spacing: 1px;
+  }
+  .detail-label {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    color: var(--gold-dark);
+    letter-spacing: 4px;
+    margin-bottom: 6px;
     font-weight: 600;
   }
-
-  .details .label {
-    display: inline-block;
-    margin-right: 14px;
+  .detail-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    color: var(--navy);
+    font-weight: 600;
+    letter-spacing: 2px;
+    padding: 4px 30px 6px;
+    border-bottom: 1px solid var(--navy);
+    min-width: 180px;
   }
 
-  .details .value {
-    display: inline-block;
-    border-bottom: 1px solid #0a2a52;
-    min-width: 220px;
-    padding: 0 14px 2px;
-    color: #0a2a52;
-  }
-
+  /* Signatures */
   .signatures {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
+    width: 100%;
     margin-top: auto;
-    padding-top: 30px;
+    padding: 0 30px;
   }
-
   .signature {
     text-align: center;
-    width: 200px;
+    width: 220px;
   }
-
-  .signature-line {
-    font-family: 'Brush Script MT', 'Lucida Handwriting', cursive;
-    font-size: 32px;
-    color: #1a1a1a;
-    height: 40px;
-    border-bottom: 1px solid #1a1a1a;
+  .signature-mark {
+    font-family: 'Great Vibes', cursive;
+    font-size: 38px;
+    color: var(--ink);
+    line-height: 1;
     margin-bottom: 4px;
-    font-style: italic;
+    transform: rotate(-3deg);
+    display: inline-block;
   }
-
+  .signature .second {
+    transform: rotate(2deg);
+  }
+  .signature-line {
+    width: 180px;
+    height: 1px;
+    background: var(--ink);
+    margin: 0 auto 6px;
+  }
   .signature-name {
-    font-size: 13px;
-    font-weight: bold;
-    color: #1a1a1a;
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    color: var(--navy);
+    letter-spacing: 2px;
+    font-weight: 600;
   }
-
   .signature-title {
-    font-size: 11px;
-    color: #1a1a1a;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 12px;
+    color: var(--ink);
     font-style: italic;
+    margin-top: 2px;
+    letter-spacing: 0.5px;
   }
 
-  .badges {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    margin: 6px 0;
+  /* Seal */
+  .seal {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    flex-shrink: 0;
+  }
+  .seal svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25));
   }
 
-  .badge {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, #f4d57a, #c8941e 60%, #8b6914);
-    border: 2px solid #8b6914;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 5px;
-    color: #1a3a6a;
-    font-weight: bold;
-    text-align: center;
-    line-height: 1.1;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  }
-
-  .badge .year {
-    font-size: 9px;
-    margin-top: 1px;
-  }
-
+  /* Print */
   @media print {
     body { background: white; padding: 0; }
     .certificate { box-shadow: none; }
@@ -250,65 +345,319 @@
 </head>
 <body>
   <div class="certificate">
-    <div class="inner-border">
 
+    <div class="frame-outer"></div>
+    <div class="frame-inner"></div>
+    <div class="frame-thin"></div>
+
+    <!-- Corner ornaments -->
+    <svg class="corner corner-tl" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M 8 50 Q 8 8, 50 8"/>
+        <path d="M 14 50 Q 14 14, 50 14"/>
+        <circle cx="8" cy="8" r="3" fill="currentColor"/>
+        <path d="M 18 30 Q 30 18, 42 18 Q 36 22, 32 28 Q 26 34, 18 30 Z" fill="currentColor" opacity="0.6"/>
+        <path d="M 22 50 L 28 50 M 32 56 L 38 50 L 32 44" stroke-linecap="round"/>
+        <circle cx="50" cy="22" r="1.5" fill="currentColor"/>
+        <circle cx="22" cy="50" r="1.5" fill="currentColor"/>
+      </g>
+    </svg>
+    <svg class="corner corner-tr" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M 8 50 Q 8 8, 50 8"/>
+        <path d="M 14 50 Q 14 14, 50 14"/>
+        <circle cx="8" cy="8" r="3" fill="currentColor"/>
+        <path d="M 18 30 Q 30 18, 42 18 Q 36 22, 32 28 Q 26 34, 18 30 Z" fill="currentColor" opacity="0.6"/>
+        <circle cx="50" cy="22" r="1.5" fill="currentColor"/>
+        <circle cx="22" cy="50" r="1.5" fill="currentColor"/>
+      </g>
+    </svg>
+    <svg class="corner corner-bl" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M 8 50 Q 8 8, 50 8"/>
+        <path d="M 14 50 Q 14 14, 50 14"/>
+        <circle cx="8" cy="8" r="3" fill="currentColor"/>
+        <path d="M 18 30 Q 30 18, 42 18 Q 36 22, 32 28 Q 26 34, 18 30 Z" fill="currentColor" opacity="0.6"/>
+        <circle cx="50" cy="22" r="1.5" fill="currentColor"/>
+        <circle cx="22" cy="50" r="1.5" fill="currentColor"/>
+      </g>
+    </svg>
+    <svg class="corner corner-br" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M 8 50 Q 8 8, 50 8"/>
+        <path d="M 14 50 Q 14 14, 50 14"/>
+        <circle cx="8" cy="8" r="3" fill="currentColor"/>
+        <path d="M 18 30 Q 30 18, 42 18 Q 36 22, 32 28 Q 26 34, 18 30 Z" fill="currentColor" opacity="0.6"/>
+        <circle cx="50" cy="22" r="1.5" fill="currentColor"/>
+        <circle cx="22" cy="50" r="1.5" fill="currentColor"/>
+      </g>
+    </svg>
+
+    <!-- Watermark -->
+    <div class="watermark">
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <g fill="none" stroke="#0b2a52" stroke-width="0.8">
+          <circle cx="100" cy="100" r="90"/>
+          <circle cx="100" cy="100" r="78"/>
+          <polygon points="100,30 165,150 35,150" stroke-width="1.5"/>
+          <polygon points="100,55 145,140 55,140" fill="#0b2a52" opacity="0.5"/>
+          <text x="100" y="190" text-anchor="middle" font-family="Cinzel, serif" font-size="9" letter-spacing="3" fill="#0b2a52">ACADEMY OF FINANCIAL TRADING</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="content">
+
+      <!-- Logo -->
       <div class="logo">
-        <div class="logo-triangle">
-          <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
-            <polygon points="50,5 95,65 5,65" fill="none" stroke="#1e4a8a" stroke-width="3"/>
-            <polygon points="50,20 80,60 20,60" fill="#1e4a8a"/>
-            <polygon points="50,32 70,58 30,58" fill="#fff"/>
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="logoGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1e4a8a"/>
+              <stop offset="100%" stop-color="#0b2a52"/>
+            </linearGradient>
+          </defs>
+          <polygon points="50,12 88,82 12,82" fill="none" stroke="url(#logoGrad)" stroke-width="2.5"/>
+          <polygon points="50,28 76,76 24,76" fill="url(#logoGrad)"/>
+          <polygon points="50,42 66,72 34,72" fill="#faf6ec"/>
+          <polygon points="50,52 60,70 40,70" fill="url(#logoGrad)"/>
+        </svg>
+        <div class="logo-text">ACADEMY OF<br>FINANCIAL TRADING</div>
+      </div>
+
+      <!-- Divider -->
+      <div class="divider">
+        <div class="divider-line"></div>
+        <div class="divider-ornament">&#10086;</div>
+        <div class="divider-line"></div>
+      </div>
+
+      <!-- Titles -->
+      <div class="title">CERTIFICATE</div>
+      <div class="subtitle">OF&nbsp;&nbsp;COMPLETION</div>
+
+      <!-- Recipient -->
+      <div class="certifies">— This is to certify that —</div>
+      <div class="name">Markus Gasser</div>
+      <div class="name-underline"></div>
+
+      <!-- Program + QR -->
+      <div class="program-block">
+        <div class="qr-box">
+          <svg viewBox="0 0 29 29" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+            <rect width="29" height="29" fill="white"/>
+            <g fill="black">
+              <!-- Top-left finder -->
+              <rect x="0" y="0" width="7" height="7"/>
+              <rect x="1" y="1" width="5" height="5" fill="white"/>
+              <rect x="2" y="2" width="3" height="3"/>
+              <!-- Top-right finder -->
+              <rect x="22" y="0" width="7" height="7"/>
+              <rect x="23" y="1" width="5" height="5" fill="white"/>
+              <rect x="24" y="2" width="3" height="3"/>
+              <!-- Bottom-left finder -->
+              <rect x="0" y="22" width="7" height="7"/>
+              <rect x="1" y="23" width="5" height="5" fill="white"/>
+              <rect x="2" y="24" width="3" height="3"/>
+              <!-- Timing patterns -->
+              <rect x="8" y="6" width="1" height="1"/>
+              <rect x="10" y="6" width="1" height="1"/>
+              <rect x="12" y="6" width="1" height="1"/>
+              <rect x="14" y="6" width="1" height="1"/>
+              <rect x="16" y="6" width="1" height="1"/>
+              <rect x="18" y="6" width="1" height="1"/>
+              <rect x="20" y="6" width="1" height="1"/>
+              <rect x="6" y="8" width="1" height="1"/>
+              <rect x="6" y="10" width="1" height="1"/>
+              <rect x="6" y="12" width="1" height="1"/>
+              <rect x="6" y="14" width="1" height="1"/>
+              <rect x="6" y="16" width="1" height="1"/>
+              <rect x="6" y="18" width="1" height="1"/>
+              <rect x="6" y="20" width="1" height="1"/>
+              <!-- Data modules (pseudo-random pattern) -->
+              <rect x="9" y="9" width="1" height="1"/>
+              <rect x="11" y="9" width="1" height="1"/>
+              <rect x="13" y="9" width="1" height="1"/>
+              <rect x="15" y="9" width="2" height="1"/>
+              <rect x="19" y="9" width="1" height="1"/>
+              <rect x="22" y="9" width="1" height="1"/>
+              <rect x="24" y="9" width="2" height="1"/>
+              <rect x="28" y="9" width="1" height="1"/>
+              <rect x="9" y="11" width="2" height="1"/>
+              <rect x="12" y="11" width="1" height="1"/>
+              <rect x="14" y="11" width="1" height="1"/>
+              <rect x="17" y="11" width="2" height="1"/>
+              <rect x="20" y="11" width="1" height="1"/>
+              <rect x="23" y="11" width="1" height="1"/>
+              <rect x="25" y="11" width="1" height="1"/>
+              <rect x="27" y="11" width="1" height="1"/>
+              <rect x="10" y="13" width="1" height="1"/>
+              <rect x="12" y="13" width="2" height="1"/>
+              <rect x="16" y="13" width="1" height="1"/>
+              <rect x="18" y="13" width="1" height="1"/>
+              <rect x="21" y="13" width="2" height="1"/>
+              <rect x="24" y="13" width="1" height="1"/>
+              <rect x="26" y="13" width="2" height="1"/>
+              <rect x="9" y="15" width="1" height="1"/>
+              <rect x="11" y="15" width="2" height="1"/>
+              <rect x="14" y="15" width="1" height="1"/>
+              <rect x="16" y="15" width="2" height="1"/>
+              <rect x="19" y="15" width="1" height="1"/>
+              <rect x="21" y="15" width="1" height="1"/>
+              <rect x="23" y="15" width="2" height="1"/>
+              <rect x="26" y="15" width="1" height="1"/>
+              <rect x="28" y="15" width="1" height="1"/>
+              <rect x="8" y="17" width="2" height="1"/>
+              <rect x="11" y="17" width="1" height="1"/>
+              <rect x="13" y="17" width="1" height="1"/>
+              <rect x="15" y="17" width="2" height="1"/>
+              <rect x="18" y="17" width="1" height="1"/>
+              <rect x="20" y="17" width="2" height="1"/>
+              <rect x="23" y="17" width="1" height="1"/>
+              <rect x="25" y="17" width="1" height="1"/>
+              <rect x="27" y="17" width="1" height="1"/>
+              <rect x="9" y="19" width="1" height="1"/>
+              <rect x="11" y="19" width="2" height="1"/>
+              <rect x="14" y="19" width="2" height="1"/>
+              <rect x="17" y="19" width="1" height="1"/>
+              <rect x="19" y="19" width="1" height="1"/>
+              <rect x="21" y="19" width="1" height="1"/>
+              <rect x="23" y="19" width="1" height="1"/>
+              <rect x="25" y="19" width="2" height="1"/>
+              <rect x="28" y="19" width="1" height="1"/>
+              <rect x="8" y="21" width="1" height="1"/>
+              <rect x="10" y="21" width="1" height="1"/>
+              <rect x="12" y="21" width="2" height="1"/>
+              <rect x="15" y="21" width="1" height="1"/>
+              <rect x="17" y="21" width="2" height="1"/>
+              <rect x="20" y="21" width="1" height="1"/>
+              <rect x="22" y="21" width="1" height="1"/>
+              <rect x="24" y="21" width="2" height="1"/>
+              <rect x="27" y="21" width="1" height="1"/>
+              <rect x="8" y="23" width="2" height="1"/>
+              <rect x="11" y="23" width="1" height="1"/>
+              <rect x="13" y="23" width="2" height="1"/>
+              <rect x="16" y="23" width="1" height="1"/>
+              <rect x="18" y="23" width="1" height="1"/>
+              <rect x="20" y="23" width="2" height="1"/>
+              <rect x="23" y="23" width="1" height="1"/>
+              <rect x="25" y="23" width="1" height="1"/>
+              <rect x="27" y="23" width="2" height="1"/>
+              <rect x="9" y="25" width="1" height="1"/>
+              <rect x="12" y="25" width="1" height="1"/>
+              <rect x="14" y="25" width="2" height="1"/>
+              <rect x="17" y="25" width="1" height="1"/>
+              <rect x="19" y="25" width="2" height="1"/>
+              <rect x="22" y="25" width="1" height="1"/>
+              <rect x="24" y="25" width="1" height="1"/>
+              <rect x="26" y="25" width="1" height="1"/>
+              <rect x="28" y="25" width="1" height="1"/>
+              <rect x="8" y="27" width="1" height="1"/>
+              <rect x="10" y="27" width="2" height="1"/>
+              <rect x="13" y="27" width="1" height="1"/>
+              <rect x="15" y="27" width="1" height="1"/>
+              <rect x="17" y="27" width="2" height="1"/>
+              <rect x="20" y="27" width="2" height="1"/>
+              <rect x="23" y="27" width="2" height="1"/>
+              <rect x="26" y="27" width="1" height="1"/>
+              <rect x="28" y="27" width="1" height="1"/>
+            </g>
           </svg>
         </div>
-        <div class="logo-text">ACADEMY OF<br>FINANCIAL<br>TRADING</div>
+
+        <div class="program-text">
+          has successfully completed the
+          <strong>ADVANCED TRADING PROGRAMME</strong>
+        </div>
       </div>
 
-      <div class="title">T<span class="small-caps">HE</span> A<span class="small-caps">CADEMY</span> O<span class="small-caps">F</span> F<span class="small-caps">INANCIAL</span> T<span class="small-caps">RADING</span></div>
-      <div class="subtitle">CERTIFICATE OF COMPLETION</div>
-
-      <div class="qr">
-        <div class="qr-code"></div>
+      <!-- Divider -->
+      <div class="divider">
+        <div class="divider-line"></div>
+        <div class="divider-ornament">&#10086;</div>
+        <div class="divider-line"></div>
       </div>
 
-      <div class="certifies-text">THIS CERTIFIES THAT</div>
-
-      <div class="name-wrapper">
-        <div class="name">MARKUS GASSER</div>
-      </div>
-
-      <div class="program-text">HAS SUCCESSFULLY COMPLETED THE ADVANCED TRADING PROGRAMME</div>
-
+      <!-- Details -->
       <div class="details">
-        <span class="label">DATED</span>
-        <span class="value">JULY 15, 2017</span>
+        <div class="detail">
+          <div class="detail-label">DATE OF ISSUE</div>
+          <div class="detail-value">July 15, 2017</div>
+        </div>
+        <div class="detail">
+          <div class="detail-label">FINAL RESULT</div>
+          <div class="detail-value">Excellent</div>
+        </div>
       </div>
 
-      <div class="details">
-        <span class="label">WITH THE RESULT</span>
-        <span class="value">EXCELLENT</span>
-      </div>
-
+      <!-- Signatures + Seal -->
       <div class="signatures">
         <div class="signature">
-          <div class="signature-line">J. Egan</div>
-          <div class="signature-name">James Egan</div>
-          <div class="signature-title">Director of Trading and Education</div>
+          <div class="signature-mark">James Egan</div>
+          <div class="signature-line"></div>
+          <div class="signature-name">JAMES EGAN</div>
+          <div class="signature-title">Director of Trading &amp; Education</div>
         </div>
 
-        <div class="badges">
-          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>EDUCATOR</div><div class="year">2012</div></div>
-          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>EDUCATOR</div><div class="year">2013</div></div>
-          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>ACADEMY</div><div class="year">2014</div></div>
-          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>ACADEMY</div><div class="year">2014</div></div>
-          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>ACADEMY</div><div class="year">2014</div></div>
-          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>ACADEMY</div><div class="year">2015</div></div>
-          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>ACADEMY</div><div class="year">2015</div></div>
-          <div class="badge"><div>BEST<br>ONLINE<br>TRADING<br>ACADEMY</div><div class="year">2015</div></div>
+        <div class="seal">
+          <svg viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="sealGold" cx="35%" cy="35%">
+                <stop offset="0%" stop-color="#f5e29a"/>
+                <stop offset="40%" stop-color="#d9b449"/>
+                <stop offset="80%" stop-color="#a8801e"/>
+                <stop offset="100%" stop-color="#6b4f10"/>
+              </radialGradient>
+              <radialGradient id="sealCenter" cx="50%" cy="50%">
+                <stop offset="0%" stop-color="#1e4a8a"/>
+                <stop offset="100%" stop-color="#0b2a52"/>
+              </radialGradient>
+              <path id="sealCircle" d="M 65,65 m -45,0 a 45,45 0 1,1 90,0 a 45,45 0 1,1 -90,0"/>
+            </defs>
+            <!-- Outer scalloped edge -->
+            <g fill="url(#sealGold)">
+              <circle cx="65" cy="65" r="62"/>
+            </g>
+            <!-- Inner ring -->
+            <circle cx="65" cy="65" r="54" fill="none" stroke="#6b4f10" stroke-width="0.5"/>
+            <circle cx="65" cy="65" r="50" fill="none" stroke="#6b4f10" stroke-width="0.5"/>
+            <!-- Curved text on ring -->
+            <text font-family="Cinzel, serif" font-size="6.5" letter-spacing="2" fill="#3a2a08" font-weight="600">
+              <textPath href="#sealCircle" startOffset="2%">ACADEMY OF FINANCIAL TRADING</textPath>
+            </text>
+            <text font-family="Cinzel, serif" font-size="6" letter-spacing="3" fill="#3a2a08" font-weight="600">
+              <textPath href="#sealCircle" startOffset="56%">CERTIFIED EXCELLENCE</textPath>
+            </text>
+            <!-- Inner blue circle -->
+            <circle cx="65" cy="65" r="36" fill="url(#sealCenter)"/>
+            <circle cx="65" cy="65" r="36" fill="none" stroke="#6b4f10" stroke-width="1.2"/>
+            <!-- Triangle emblem -->
+            <polygon points="65,42 86,80 44,80" fill="none" stroke="#e6c659" stroke-width="1.5"/>
+            <polygon points="65,52 78,76 52,76" fill="#e6c659"/>
+            <polygon points="65,60 72,74 58,74" fill="#0b2a52"/>
+            <!-- Star burst rays around the seal -->
+            <g stroke="#8b6914" stroke-width="0.6" opacity="0.7">
+              <line x1="65" y1="3" x2="65" y2="9"/>
+              <line x1="65" y1="121" x2="65" y2="127"/>
+              <line x1="3" y1="65" x2="9" y2="65"/>
+              <line x1="121" y1="65" x2="127" y2="65"/>
+              <line x1="22" y1="22" x2="26" y2="26"/>
+              <line x1="104" y1="22" x2="108" y2="26"/>
+              <line x1="22" y1="108" x2="26" y2="104"/>
+              <line x1="104" y1="108" x2="108" y2="104"/>
+            </g>
+            <!-- Ribbon -->
+            <path d="M 35 110 L 25 130 L 45 124 L 50 115 Z" fill="#8a1d2c"/>
+            <path d="M 95 110 L 105 130 L 85 124 L 80 115 Z" fill="#8a1d2c"/>
+            <path d="M 35 110 L 50 115 L 45 124 Z" fill="#5e1320"/>
+            <path d="M 95 110 L 80 115 L 85 124 Z" fill="#5e1320"/>
+          </svg>
         </div>
 
         <div class="signature">
-          <div class="signature-line">A. Murphy</div>
-          <div class="signature-name">Adrian Murphy</div>
+          <div class="signature-mark second">Adrian Murphy</div>
+          <div class="signature-line"></div>
+          <div class="signature-name">ADRIAN MURPHY</div>
           <div class="signature-title">Director of Operations</div>
         </div>
       </div>
