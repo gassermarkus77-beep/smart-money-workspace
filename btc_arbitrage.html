@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="uk">
+<html lang="it">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BTC Арбітражний калькулятор</title>
-    <meta name="description" content="Калькулятор арбітражної угоди по біткойну: сума інвестиції, бонус компанії, прибуток." />
+    <title>Calcolatore di arbitraggio BTC</title>
+    <meta name="description" content="Calcolatore di un'operazione di arbitraggio sul Bitcoin: importo dell'investimento, bonus dell'azienda, profitto e gestione clienti." />
     <style>
       :root { color-scheme: dark; }
       * { box-sizing: border-box; }
@@ -17,31 +17,37 @@
         background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.05) 1px, transparent 0);
         background-size: 28px 28px;
       }
-      .wrap { max-width: 1080px; margin: 0 auto; padding: 2.5rem 1.25rem; }
+      .wrap { max-width: 1180px; margin: 0 auto; padding: 2.5rem 1.25rem; }
       header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
       h1 { margin: 0; font-size: 1.6rem; font-weight: 800; letter-spacing: -.01em; }
+      h2 { margin: 0 0 1rem 0; font-size: 1.15rem; font-weight: 800; letter-spacing: -.01em; }
       .subtitle { color: #a1a1aa; font-size: .92rem; margin-top: .35rem; }
       .badge { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .7rem; border-radius: 999px; background: rgba(16,185,129,.12); color: #6ee7b7; border: 1px solid rgba(16,185,129,.35); font-size: .78rem; font-weight: 700; }
       .panel { background: rgba(24,24,27,.72); border: 1px solid rgba(63,63,70,.8); border-radius: 16px; box-shadow: 0 18px 60px rgba(0,0,0,.25); padding: 1.5rem; }
+      .panel + .panel { margin-top: 1.5rem; }
+      .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
       .table-wrap { overflow-x: auto; border-radius: 12px; }
       table { width: 100%; border-collapse: collapse; min-width: 760px; }
-      th, td { text-align: left; padding: .9rem .85rem; border-bottom: 1px solid rgba(63,63,70,.65); font-size: .9rem; vertical-align: middle; }
-      th { color: #a1a1aa; font-weight: 700; background: rgba(39,39,42,.6); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+      th, td { text-align: left; padding: .85rem .75rem; border-bottom: 1px solid rgba(63,63,70,.65); font-size: .9rem; vertical-align: middle; }
+      th { color: #a1a1aa; font-weight: 700; background: rgba(39,39,42,.6); font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; }
       tbody tr:last-child td { border-bottom: none; }
+      tfoot td { font-weight: 800; background: rgba(39,39,42,.4); border-top: 1px solid rgba(63,63,70,.8); border-bottom: none; }
       .input-cell { position: relative; }
-      input[type="number"] {
+      input[type="number"], input[type="text"] {
         width: 100%;
         background: rgba(9,9,11,.82);
         border: 1px solid #3f3f46;
         color: #f4f4f5;
         border-radius: 10px;
-        padding: .62rem .72rem .62rem 2.1rem;
+        padding: .58rem .72rem;
         outline: none;
-        font-size: .95rem;
+        font-size: .92rem;
         font-weight: 600;
         font-variant-numeric: tabular-nums;
         transition: border-color .15s ease, box-shadow .15s ease;
       }
+      input[type="text"] { font-variant-numeric: normal; }
+      input[type="number"] { padding-left: 2.1rem; }
       input[type="number"]::-webkit-outer-spin-button,
       input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
       input[type="number"] { -moz-appearance: textfield; }
@@ -61,10 +67,12 @@
         font-weight: 800;
         font-size: 1rem;
         font-variant-numeric: tabular-nums;
-        min-width: 9rem;
+        min-width: 8.5rem;
         justify-content: flex-end;
       }
       .result.muted { background: rgba(63,63,70,.35); color: #d4d4d8; border-color: rgba(82,82,91,.6); }
+      .result.warn { background: rgba(245,158,11,.12); color: #fcd34d; border-color: rgba(245,158,11,.4); }
+      .result.done { background: rgba(16,185,129,.18); color: #34d399; border-color: rgba(16,185,129,.5); }
       .actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1.25rem; }
       .btn {
         display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
@@ -74,16 +82,24 @@
       .btn:hover { background: #27272a; border-color: #52525b; }
       .btn-primary { background: #10b981; color: #04130e; border-color: #34d399; }
       .btn-primary:hover { background: #34d399; }
+      .btn-danger { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.4); color: #fecaca; padding: .4rem .65rem; font-size: .78rem; }
+      .btn-danger:hover { background: rgba(239,68,68,.2); }
       .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .85rem; margin-top: 1.25rem; }
       .summary .card { background: rgba(9,9,11,.55); border: 1px solid rgba(63,63,70,.65); border-radius: 12px; padding: .9rem 1rem; }
       .summary .label { color: #a1a1aa; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
       .summary .value { margin-top: .35rem; font-size: 1.25rem; font-weight: 800; font-variant-numeric: tabular-nums; }
       .summary .card.highlight .value { color: #6ee7b7; }
+      .progress { height: 6px; background: rgba(63,63,70,.6); border-radius: 999px; overflow: hidden; margin-top: .35rem; }
+      .progress > span { display: block; height: 100%; background: linear-gradient(90deg,#10b981,#22d3ee); transition: width .3s ease; }
+      .pct-cell { display: flex; flex-direction: column; gap: .2rem; min-width: 7.5rem; }
+      .pct-text { font-weight: 800; font-size: .9rem; font-variant-numeric: tabular-nums; }
+      .empty { text-align: center; color: #71717a; padding: 2rem 1rem; font-style: italic; }
       footer { text-align: center; color: #71717a; font-size: .8rem; margin-top: 2rem; }
       @media (max-width: 720px) {
         table { min-width: 100%; }
-        th, td { padding: .7rem .55rem; font-size: .82rem; }
+        th, td { padding: .65rem .5rem; font-size: .8rem; }
         h1 { font-size: 1.3rem; }
+        input[type="number"], input[type="text"] { font-size: .85rem; padding-left: 1.85rem; }
       }
     </style>
   </head>
@@ -91,22 +107,23 @@
     <div class="wrap">
       <header>
         <div>
-          <h1>BTC Арбітражний калькулятор</h1>
-          <div class="subtitle">Розрахунок прибутку від арбітражної угоди по біткойну</div>
+          <h1>Calcolatore di arbitraggio BTC</h1>
+          <div class="subtitle">Calcolo del profitto di un'operazione di arbitraggio sul Bitcoin</div>
         </div>
         <span class="badge">● USDT / USD</span>
       </header>
 
       <section class="panel">
+        <h2>Parametri dell'operazione</h2>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th style="width: 24%">Сума інвестиції</th>
-                <th style="width: 22%">Бонус від компанії</th>
-                <th style="width: 16%">% прибутку</th>
-                <th style="width: 19%">Прибуток</th>
-                <th style="width: 19%">Підсумок до виводу</th>
+                <th style="width: 24%">Importo dell'investimento</th>
+                <th style="width: 22%">Bonus dell'azienda</th>
+                <th style="width: 16%">% di profitto</th>
+                <th style="width: 19%">Profitto</th>
+                <th style="width: 19%">Totale da prelevare</th>
               </tr>
             </thead>
             <tbody>
@@ -142,31 +159,66 @@
 
         <div class="summary">
           <div class="card">
-            <div class="label">База розрахунку</div>
+            <div class="label">Base di calcolo</div>
             <div class="value" id="baseOut">$0.00</div>
           </div>
           <div class="card highlight">
-            <div class="label">Чистий прибуток</div>
+            <div class="label">Profitto netto</div>
             <div class="value" id="netProfitOut">$0.00</div>
           </div>
           <div class="card">
-            <div class="label">ROI на власні кошти</div>
+            <div class="label">ROI sul capitale proprio</div>
             <div class="value" id="roiOut">0.00%</div>
           </div>
         </div>
 
         <div class="actions">
-          <button class="btn btn-primary" id="resetBtn" type="button">Скинути значення</button>
-          <button class="btn" id="copyBtn" type="button">Скопіювати підсумок</button>
+          <button class="btn btn-primary" id="resetBtn" type="button">Ripristina valori</button>
+          <button class="btn" id="copyBtn" type="button">Copia riepilogo</button>
         </div>
       </section>
 
-      <footer>Дані зберігаються локально у браузері (localStorage)</footer>
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Clienti</h2>
+          <button class="btn btn-primary" id="addClientBtn" type="button">+ Aggiungi cliente</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 20%">Nome</th>
+                <th style="width: 16%">Saldo attuale</th>
+                <th style="width: 16%">Obiettivo</th>
+                <th style="width: 16%">Ancora da versare</th>
+                <th style="width: 22%">% completamento</th>
+                <th style="width: 10%"></th>
+              </tr>
+            </thead>
+            <tbody id="clientsBody"></tbody>
+            <tfoot>
+              <tr>
+                <td>Totale</td>
+                <td id="totalBalance">$0.00</td>
+                <td id="totalTarget">$0.00</td>
+                <td id="totalRemaining">$0.00</td>
+                <td id="totalProgress">0.00%</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div id="emptyMsg" class="empty">Nessun cliente — aggiungi il primo con il pulsante sopra.</div>
+      </section>
+
+      <footer>I dati vengono salvati localmente nel browser (localStorage)</footer>
     </div>
 
     <script>
       (function () {
-        var STORAGE_KEY = 'btc-arbitrage-calc-v1';
+        var CALC_KEY = 'btc-arbitrage-calc-v1';
+        var CLIENTS_KEY = 'btc-arbitrage-clients-v1';
         var DEFAULTS = { investment: 1000, bonus: 500, profitPct: 15 };
 
         var investmentEl = document.getElementById('investment');
@@ -180,33 +232,37 @@
         var resetBtn = document.getElementById('resetBtn');
         var copyBtn = document.getElementById('copyBtn');
 
+        var clientsBody = document.getElementById('clientsBody');
+        var addClientBtn = document.getElementById('addClientBtn');
+        var emptyMsg = document.getElementById('emptyMsg');
+        var totalBalanceEl = document.getElementById('totalBalance');
+        var totalTargetEl = document.getElementById('totalTarget');
+        var totalRemainingEl = document.getElementById('totalRemaining');
+        var totalProgressEl = document.getElementById('totalProgress');
+
         function fmtUSD(n) {
           if (!isFinite(n)) n = 0;
-          return '$' + n.toLocaleString('uk-UA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          return '$' + n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
-
         function fmtPct(n) {
           if (!isFinite(n)) n = 0;
-          return n.toLocaleString('uk-UA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+          return n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
         }
-
         function readNum(el) {
           var v = parseFloat(el.value);
           return isNaN(v) ? 0 : v;
         }
-
-        function save(state) {
-          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+        function saveCalc(state) {
+          try { localStorage.setItem(CALC_KEY, JSON.stringify(state)); } catch (e) {}
         }
-
-        function load() {
+        function loadCalc() {
           try {
-            var raw = localStorage.getItem(STORAGE_KEY);
+            var raw = localStorage.getItem(CALC_KEY);
             return raw ? JSON.parse(raw) : null;
           } catch (e) { return null; }
         }
 
-        function recalc() {
+        function recalcMain() {
           var investment = readNum(investmentEl);
           var bonus = readNum(bonusEl);
           var pct = readNum(profitPctEl);
@@ -222,46 +278,177 @@
           netProfitOut.textContent = fmtUSD(profit);
           roiOut.textContent = fmtPct(roi);
 
-          save({ investment: investment, bonus: bonus, profitPct: pct });
+          saveCalc({ investment: investment, bonus: bonus, profitPct: pct });
         }
 
-        function applyState(s) {
+        function applyCalcState(s) {
           investmentEl.value = s.investment;
           bonusEl.value = s.bonus;
           profitPctEl.value = s.profitPct;
         }
 
         [investmentEl, bonusEl, profitPctEl].forEach(function (el) {
-          el.addEventListener('input', recalc);
+          el.addEventListener('input', recalcMain);
         });
-
         resetBtn.addEventListener('click', function () {
-          applyState(DEFAULTS);
-          recalc();
+          applyCalcState(DEFAULTS);
+          recalcMain();
         });
-
         copyBtn.addEventListener('click', function () {
           var lines = [
-            'BTC Арбітражна угода',
-            'Інвестиція: ' + fmtUSD(readNum(investmentEl)),
-            'Бонус компанії: ' + fmtUSD(readNum(bonusEl)),
-            '% прибутку: ' + fmtPct(readNum(profitPctEl)),
-            'Прибуток: ' + netProfitOut.textContent,
-            'Підсумок: ' + totalOut.textContent,
+            'Operazione di arbitraggio BTC',
+            'Investimento: ' + fmtUSD(readNum(investmentEl)),
+            'Bonus dell\'azienda: ' + fmtUSD(readNum(bonusEl)),
+            '% di profitto: ' + fmtPct(readNum(profitPctEl)),
+            'Profitto: ' + netProfitOut.textContent,
+            'Totale: ' + totalOut.textContent,
             'ROI: ' + roiOut.textContent
           ].join('\n');
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(lines).then(function () {
               var orig = copyBtn.textContent;
-              copyBtn.textContent = 'Скопійовано ✓';
+              copyBtn.textContent = 'Copiato ✓';
               setTimeout(function () { copyBtn.textContent = orig; }, 1500);
             });
           }
         });
 
-        var saved = load();
-        if (saved) applyState(saved);
-        recalc();
+        var savedCalc = loadCalc();
+        if (savedCalc) applyCalcState(savedCalc);
+        recalcMain();
+
+        // ---------- Clienti ----------
+        var clients = [];
+
+        function loadClients() {
+          try {
+            var raw = localStorage.getItem(CLIENTS_KEY);
+            clients = raw ? JSON.parse(raw) : [];
+          } catch (e) { clients = []; }
+        }
+        function saveClients() {
+          try { localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients)); } catch (e) {}
+        }
+        function uid() {
+          return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        }
+
+        function renderClients() {
+          clientsBody.innerHTML = '';
+          if (clients.length === 0) {
+            emptyMsg.style.display = 'block';
+          } else {
+            emptyMsg.style.display = 'none';
+          }
+
+          var totBalance = 0, totTarget = 0, totRemaining = 0;
+
+          clients.forEach(function (c) {
+            var balance = parseFloat(c.balance) || 0;
+            var target = parseFloat(c.target) || 0;
+            var remaining = Math.max(0, target - balance);
+            var pct = target > 0 ? Math.min(100, (balance / target) * 100) : 0;
+
+            totBalance += balance;
+            totTarget += target;
+            totRemaining += remaining;
+
+            var tr = document.createElement('tr');
+            tr.dataset.id = c.id;
+
+            // Nome
+            var tdName = document.createElement('td');
+            var inpName = document.createElement('input');
+            inpName.type = 'text';
+            inpName.value = c.name || '';
+            inpName.placeholder = 'Nome cliente';
+            inpName.addEventListener('input', function () { c.name = inpName.value; saveClients(); });
+            tdName.appendChild(inpName);
+            tr.appendChild(tdName);
+
+            // Saldo
+            var tdBalance = document.createElement('td');
+            var cellBal = document.createElement('div'); cellBal.className = 'input-cell';
+            var pref1 = document.createElement('span'); pref1.className = 'currency-prefix'; pref1.textContent = '$';
+            var inpBal = document.createElement('input');
+            inpBal.type = 'number'; inpBal.min = '0'; inpBal.step = '0.01';
+            inpBal.value = balance;
+            inpBal.addEventListener('input', function () {
+              c.balance = inpBal.value; saveClients(); renderClients();
+            });
+            cellBal.appendChild(pref1); cellBal.appendChild(inpBal);
+            tdBalance.appendChild(cellBal);
+            tr.appendChild(tdBalance);
+
+            // Obiettivo
+            var tdTarget = document.createElement('td');
+            var cellTgt = document.createElement('div'); cellTgt.className = 'input-cell';
+            var pref2 = document.createElement('span'); pref2.className = 'currency-prefix'; pref2.textContent = '$';
+            var inpTgt = document.createElement('input');
+            inpTgt.type = 'number'; inpTgt.min = '0'; inpTgt.step = '0.01';
+            inpTgt.value = target;
+            inpTgt.addEventListener('input', function () {
+              c.target = inpTgt.value; saveClients(); renderClients();
+            });
+            cellTgt.appendChild(pref2); cellTgt.appendChild(inpTgt);
+            tdTarget.appendChild(cellTgt);
+            tr.appendChild(tdTarget);
+
+            // Ancora da versare
+            var tdRem = document.createElement('td');
+            var remSpan = document.createElement('span');
+            remSpan.className = 'result ' + (remaining <= 0 && target > 0 ? 'done' : 'warn');
+            remSpan.textContent = fmtUSD(remaining);
+            tdRem.appendChild(remSpan);
+            tr.appendChild(tdRem);
+
+            // % completamento + progress
+            var tdPct = document.createElement('td');
+            var pctWrap = document.createElement('div'); pctWrap.className = 'pct-cell';
+            var pctText = document.createElement('div');
+            pctText.className = 'pct-text';
+            pctText.textContent = fmtPct(pct);
+            pctText.style.color = pct >= 100 ? '#34d399' : '#e4e4e7';
+            var progressBar = document.createElement('div'); progressBar.className = 'progress';
+            var progressFill = document.createElement('span');
+            progressFill.style.width = pct + '%';
+            progressBar.appendChild(progressFill);
+            pctWrap.appendChild(pctText); pctWrap.appendChild(progressBar);
+            tdPct.appendChild(pctWrap);
+            tr.appendChild(tdPct);
+
+            // Azione
+            var tdAct = document.createElement('td');
+            var delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'btn btn-danger';
+            delBtn.textContent = 'Elimina';
+            delBtn.addEventListener('click', function () {
+              clients = clients.filter(function (x) { return x.id !== c.id; });
+              saveClients();
+              renderClients();
+            });
+            tdAct.appendChild(delBtn);
+            tr.appendChild(tdAct);
+
+            clientsBody.appendChild(tr);
+          });
+
+          var totPct = totTarget > 0 ? Math.min(100, (totBalance / totTarget) * 100) : 0;
+          totalBalanceEl.textContent = fmtUSD(totBalance);
+          totalTargetEl.textContent = fmtUSD(totTarget);
+          totalRemainingEl.textContent = fmtUSD(totRemaining);
+          totalProgressEl.textContent = fmtPct(totPct);
+        }
+
+        addClientBtn.addEventListener('click', function () {
+          clients.push({ id: uid(), name: '', balance: 0, target: 0 });
+          saveClients();
+          renderClients();
+        });
+
+        loadClients();
+        renderClients();
       })();
     </script>
   </body>
