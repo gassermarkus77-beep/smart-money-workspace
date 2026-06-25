@@ -37,7 +37,7 @@ All work product, sales material, and contracts must consistently reflect this s
 | # | Manual | Primary Owner | Status |
 |---|---|---|---|
 | 01 | Corporate Strategy & Vision Manual | Chief Strategy Officer | ✅ Published |
-| 02 | Operations Manual | Chief Operating Officer | Planned |
+| 02 | Operations Manual | Chief Operating Officer | ✅ Published |
 | 03 | Sales Manual | Chief Sales Officer | Planned |
 | 04 | Marketing Manual | Chief Marketing Officer | Planned |
 | 05 | Financial Manual | Chief Financial Officer | Planned |
