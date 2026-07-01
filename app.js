@@ -128,7 +128,7 @@
     const app = $('#app');
     const s = stats();
     const tabs = [
-      ['dashboard', 'Dashboard', '📊'], ['checklists', 'Checklists', '✅'], ['journal', 'Journal', '📓'], ['playbook', 'Playbook', '📚'], ['risk', 'Risk', '🛡️'], ['plan', 'Plan', '🗓️'], ['statistics', 'Stats', '📈'], ['psychology', 'Psychology', '🧠']
+      ['dashboard', 'Dashboard', '📊'], ['checklists', 'Checklists', '✅'], ['journal', 'Journal', '📓'], ['playbook', 'Playbook', '📚'], ['risk', 'Risk', '🛡️'], ['compound', 'Calculator', '💹'], ['plan', 'Plan', '🗓️'], ['statistics', 'Stats', '📈'], ['psychology', 'Psychology', '🧠']
     ];
     app.innerHTML = `
       <div class="min-h-screen bg-grid">
@@ -154,6 +154,7 @@
       case 'journal': return renderJournal();
       case 'playbook': return renderPlaybook();
       case 'risk': return renderRisk(s);
+      case 'compound': return renderCompound();
       case 'plan': return renderPlan();
       case 'statistics': return renderStatistics(s);
       case 'psychology': return renderPsychology();
@@ -230,6 +231,42 @@
   function renderCalc() { return `<form id="calc-form" class="space-y-3"><div class="grid sm:grid-cols-3 gap-3">${field('Entry', '<input name="entry" type="number" step="0.00001" placeholder="1.0850">')}${field('Stop Loss', '<input name="sl" type="number" step="0.00001" placeholder="1.0820">')}${field('Risk %', `<input name="riskPct" type="number" step="0.1" value="${state.settings.riskPerTradePct}">`)}</div><button class="btn btn-primary" type="submit">Calculate</button><div id="calc-result" class="mt-4 text-sm text-zinc-400">Enter values to calculate approximate FX lot size.</div></form>`; }
   function renderSettings() { return `<form id="settings-form" class="grid sm:grid-cols-2 gap-3">${field('Account Size', `<input name="accountSize" type="number" value="${state.settings.accountSize}">`)}${field('Currency', `<input name="currency" value="${escapeHtml(state.settings.currency)}">`)}${field('Risk per Trade %', `<input name="riskPerTradePct" type="number" step="0.1" value="${state.settings.riskPerTradePct}">`)}${field('Max Daily %', `<input name="maxDailyRiskPct" type="number" step="0.1" value="${state.settings.maxDailyRiskPct}">`)}${field('Max Weekly %', `<input name="weeklyRiskPct" type="number" step="0.1" value="${state.settings.weeklyRiskPct}">`)}${field('Max Drawdown %', `<input name="maxDrawdownPct" type="number" step="0.1" value="${state.settings.maxDrawdownPct}">`)}<div class="sm:col-span-2"><button class="btn btn-primary" type="submit">Save Settings</button></div></form>`; }
 
+  const COMPOUND_PERIODS = { daily: 365, monthly: 12, quarterly: 4, semiannually: 2, annually: 1 };
+  const COMPOUND_PERIOD_LABELS = { daily: 'Щодня', monthly: 'Щомісяця', quarterly: 'Щокварталу', semiannually: 'Раз на півроку', annually: 'Раз на рік' };
+
+  function computeCompoundInterest({ principal, contribution, annualRatePct, periodsPerYear, years }) {
+    const periodicRate = annualRatePct / 100 / periodsPerYear;
+    const totalPeriods = Math.round(periodsPerYear * years);
+    const schedule = [];
+    for (let year = 1; year <= Math.ceil(years); year += 1) {
+      const periodsElapsed = Math.min(totalPeriods, Math.round(periodsPerYear * year));
+      const growth = periodicRate === 0 ? 1 : Math.pow(1 + periodicRate, periodsElapsed);
+      const balance = principal * growth + (periodicRate === 0 ? contribution * periodsElapsed : contribution * ((growth - 1) / periodicRate));
+      const deposited = principal + contribution * periodsElapsed;
+      schedule.push({ year, balance, deposited, interest: balance - deposited });
+    }
+    const final = schedule[schedule.length - 1] || { balance: principal, deposited: principal, interest: 0 };
+    return { schedule, finalBalance: final.balance, totalDeposited: final.deposited, totalInterest: final.interest };
+  }
+
+  function renderCompound() {
+    return `<div class="space-y-5">${panel('Калькулятор складного відсотка', renderCompoundForm())}</div>`;
+  }
+
+  function renderCompoundForm() {
+    return `<form id="compound-form" class="space-y-4">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        ${field('Початкова сума', '<input name="principal" type="number" min="0" step="0.01" value="1000">')}
+        ${field('Регулярний внесок', '<input name="contribution" type="number" min="0" step="0.01" value="100">')}
+        ${field('Річна ставка, %', '<input name="rate" type="number" step="0.01" value="8">')}
+        ${field('Термін, років', '<input name="years" type="number" min="1" step="1" value="10">')}
+      </div>
+      ${field('Період капіталізації / внесків', `<select name="period">${Object.entries(COMPOUND_PERIOD_LABELS).map(([value, label]) => `<option value="${value}" ${value === 'monthly' ? 'selected' : ''}>${label}</option>`).join('')}</select>`)}
+      <button class="btn btn-primary" type="submit">Розрахувати</button>
+      <div id="compound-result" class="mt-2 text-sm text-zinc-400">Введіть суми, ставку і період, щоб побачити результат.</div>
+    </form>`;
+  }
+
   function renderPlan() {
     return `<div class="grid layout gap-5" style="grid-template-columns: .8fr 1.2fr;">${panel('Session Prep', `<ul class="space-y-2">${['Calendar checked', 'HTF bias written', 'Liquidity pools marked', 'POI selected', 'Invalidation clear', 'Risk limit visible'].map((x) => `<li class="flex gap-2"><span class="text-emerald-400">✓</span>${x}</li>`).join('')}</ul>`)}${panel('Daily Routine', `<div class="space-y-2">${ROUTINE.map(([time, task]) => `<div class="flex gap-3 p-3 rounded-xl bg-zinc-900/70 border border-zinc-800"><span class="font-black text-emerald-400 w-14">${time}</span><span>${escapeHtml(task)}</span></div>`).join('')}</div>`)}</div>`;
   }
@@ -287,6 +324,26 @@
       const pips = Math.abs(entry - sl) / 0.0001;
       const lots = pips ? riskAmount / (pips * 10) : 0;
       result.innerHTML = `<div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30"><div>Risk Amount: <b>${money(riskAmount, state.settings.currency)}</b></div><div>SL Distance: <b>${pips.toFixed(1)} pips</b></div><div>Approx. Position Size: <b>${lots.toFixed(2)} lots</b></div><p class="text-xs text-zinc-500 mt-2">Approximation uses standard FX pip value ($10 per pip per lot). Adjust for metals, JPY pairs, indices, and broker contract specs.</p></div>`;
+    });
+    $('#compound-form')?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(event.currentTarget));
+      const principal = Number(data.principal || 0);
+      const contribution = Number(data.contribution || 0);
+      const annualRatePct = Number(data.rate || 0);
+      const years = Number(data.years || 0);
+      const periodsPerYear = COMPOUND_PERIODS[data.period] || 12;
+      const result = $('#compound-result');
+      if (principal < 0 || contribution < 0 || years <= 0) { result.innerHTML = '<span class="text-red-300">Перевірте введені значення: сума і термін мають бути додатними.</span>'; return; }
+      const { schedule, finalBalance, totalDeposited, totalInterest } = computeCompoundInterest({ principal, contribution, annualRatePct, periodsPerYear, years });
+      const currency = state.settings.currency;
+      result.innerHTML = `
+        <div class="grid sm:grid-cols-3 gap-3 mb-4">
+          ${statCard('Кінцева сума', money(finalBalance, currency), `За ${years} р. • ${COMPOUND_PERIOD_LABELS[data.period]}`, 'emerald')}
+          ${statCard('Внесено всього', money(totalDeposited, currency), 'Початкова сума + внески', 'sky')}
+          ${statCard('Нараховані відсотки', money(totalInterest, currency), `${(totalDeposited ? (totalInterest / totalDeposited) * 100 : 0).toFixed(1)}% від внесків`, 'violet')}
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Рік</th><th>Внесено</th><th>Відсотки</th><th>Баланс</th></tr></thead><tbody>${schedule.map((row) => `<tr><td>${row.year}</td><td>${money(row.deposited, currency)}</td><td class="text-violet-300">${money(row.interest, currency)}</td><td class="font-bold text-emerald-300">${money(row.balance, currency)}</td></tr>`).join('')}</tbody></table></div>`;
     });
     $('#discipline-form')?.addEventListener('submit', (event) => {
       event.preventDefault();
